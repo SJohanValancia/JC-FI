@@ -7,21 +7,21 @@ const { verificarToken } = require('../middleware/auth');
 // Registro de usuario
 router.post('/register', async (req, res) => {
   try {
-    const { nombre, email, password, rol, finca } = req.body;
+    const { nombre, usuario, password, rol, finca } = req.body;
     
     // Verificar si el usuario ya existe
-    const usuarioExistente = await User.findOne({ email });
+    const usuarioExistente = await User.findOne({ usuario });
     if (usuarioExistente) {
       return res.status(400).json({ 
         success: false, 
-        message: 'El email ya está registrado' 
+        message: 'El usuario ya está registrado' 
       });
     }
     
     // Crear nuevo usuario
     const nuevoUsuario = new User({
       nombre,
-      email,
+      usuario,
       password,
       rol: rol || 'trabajador',
       finca: finca || ''
@@ -33,7 +33,7 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(
       { 
         id: nuevoUsuario._id, 
-        email: nuevoUsuario.email,
+        usuario: nuevoUsuario.usuario,
         rol: nuevoUsuario.rol 
       },
       process.env.JWT_SECRET,
@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
       usuario: {
         id: nuevoUsuario._id,
         nombre: nuevoUsuario.nombre,
-        email: nuevoUsuario.email,
+        usuario: nuevoUsuario.usuario,
         rol: nuevoUsuario.rol,
         finca: nuevoUsuario.finca
       }
@@ -66,19 +66,19 @@ router.post('/register', async (req, res) => {
 // Login de usuario
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { usuario, password } = req.body;
     
     // Verificar si el usuario existe
-    const usuario = await User.findOne({ email });
-    if (!usuario) {
+    const usuarioEncontrado = await User.findOne({ usuario });
+    if (!usuarioEncontrado) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Email o contraseña incorrectos' 
+        message: 'Usuario o contraseña incorrectos' 
       });
     }
     
     // Verificar si el usuario está activo
-    if (!usuario.activo) {
+    if (!usuarioEncontrado.activo) {
       return res.status(403).json({ 
         success: false, 
         message: 'Usuario inactivo. Contacte al administrador' 
@@ -86,20 +86,20 @@ router.post('/login', async (req, res) => {
     }
     
     // Verificar contraseña
-    const passwordValido = await usuario.compararPassword(password);
+    const passwordValido = await usuarioEncontrado.compararPassword(password);
     if (!passwordValido) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Email o contraseña incorrectos' 
+        message: 'Usuario o contraseña incorrectos' 
       });
     }
     
     // Generar token
     const token = jwt.sign(
       { 
-        id: usuario._id, 
-        email: usuario.email,
-        rol: usuario.rol 
+        id: usuarioEncontrado._id, 
+        usuario: usuarioEncontrado.usuario,
+        rol: usuarioEncontrado.rol 
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -110,11 +110,11 @@ router.post('/login', async (req, res) => {
       message: 'Inicio de sesión exitoso',
       token,
       usuario: {
-        id: usuario._id,
-        nombre: usuario.nombre,
-        email: usuario.email,
-        rol: usuario.rol,
-        finca: usuario.finca
+        id: usuarioEncontrado._id,
+        nombre: usuarioEncontrado.nombre,
+        usuario: usuarioEncontrado.usuario,
+        rol: usuarioEncontrado.rol,
+        finca: usuarioEncontrado.finca
       }
     });
     
