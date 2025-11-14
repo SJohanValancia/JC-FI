@@ -757,11 +757,64 @@
         inicializarInventario();
     });
 
-    function inicializarInventario() {
-        actualizarUsuario();
-        cargarInventario();
-        cargarEstadisticas();
+function inicializarInventario() {
+    actualizarUsuario();
+    cargarInventario();
+    cargarEstadisticas();
+    verificarStockBajo(); // Agregar esta línea
+}
+
+    async function verificarStockBajo() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/inventario/alertas/stock-bajo`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.alertas.length > 0) {
+            mostrarAlertaStock(data.alertas);
+        }
+    } catch (error) {
+        console.error('Error al verificar stock bajo:', error);
     }
+}
+
+function mostrarAlertaStock(productos) {
+    const alertContainer = document.getElementById('alertContainer');
+    
+    const alerta = document.createElement('div');
+    alerta.className = 'alerta-stock';
+    alerta.id = 'alertaStockBajo';
+    
+    let itemsHTML = productos.map(p => `
+        <div class="alerta-stock-item">
+            <strong>${p.nombre}</strong>: Quedan ${p.stock} unidad${p.stock > 1 ? 'es' : ''}
+        </div>
+    `).join('');
+    
+    alerta.innerHTML = `
+        <div class="alerta-stock-icon">⚠️</div>
+        <div class="alerta-stock-content">
+            <div class="alerta-stock-title">¡Cuidado! Stock bajo</div>
+            ${itemsHTML}
+        </div>
+        <button class="alerta-stock-close" onclick="cerrarAlertaStock()">✕</button>
+    `;
+    
+    alertContainer.appendChild(alerta);
+}
+
+function cerrarAlertaStock() {
+    const alerta = document.getElementById('alertaStockBajo');
+    if (alerta) {
+        alerta.remove();
+    }
+}
 
     function actualizarUsuario() {
         document.getElementById('userBadge').textContent = userData.nombre;

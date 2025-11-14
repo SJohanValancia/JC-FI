@@ -15,6 +15,16 @@ const gastoSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  inventarioId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Inventario',
+    default: null
+  },
+  cantidadUsada: {
+    type: Number,
+    default: null,
+    min: [0, 'La cantidad debe ser positiva']
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -38,7 +48,6 @@ const gastoSchema = new mongoose.Schema({
   }
 });
 
-// Actualizar fecha de modificación antes de guardar
 gastoSchema.pre('save', function(next) {
   this.actualizado = Date.now();
   next();

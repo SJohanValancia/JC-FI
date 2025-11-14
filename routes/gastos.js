@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Gasto = require('../models/Gasto');
+const Inventario = require('../models/Inventario');
 const { verificarToken } = require('../middleware/auth');
 
 // Obtener todos los gastos del usuario
@@ -51,7 +52,7 @@ router.get('/:id', verificarToken, async (req, res) => {
   }
 });
 
-// Crear gastos (uno o varios)
+// Crear gastos (uno o varios) con descuento de inventario
 router.post('/', verificarToken, async (req, res) => {
   try {
     const { gastos } = req.body;
@@ -71,18 +72,47 @@ router.post('/', verificarToken, async (req, res) => {
           message: 'Todos los gastos deben tener descripción y valor válido'
         });
       }
+      
+      // Si tiene inventarioId, validar que existe y hay suficiente stock
+      if (gasto.inventarioId && gasto.cantidadUsada) {
+        const producto = await Inventario.findById(gasto.inventarioId);
+        if (!producto) {
+          return res.status(404).json({
+            success: false,
+            message: `El producto ${gasto.inventario} no existe`
+          });
+        }
+        
+        if (producto.stock < gasto.cantidadUsada) {
+          return res.status(400).json({
+            success: false,
+            message: `Stock insuficiente de ${gasto.inventario}. Disponible: ${producto.stock}`
+          });
+        }
+      }
     }
     
-    // Crear gastos con información del usuario
-    const gastosCreados = await Promise.all(
-      gastos.map(gasto => {
-        return Gasto.create({
-          ...gasto,
-          usuario: req.usuario.id,
-          usuarioNombre: req.usuario.usuario
-        });
-      })
-    );
+    // Crear gastos y descontar inventario
+    const gastosCreados = [];
+    
+    for (let gasto of gastos) {
+      // Crear el gasto
+      const nuevoGasto = await Gasto.create({
+        ...gasto,
+        usuario: req.usuario.id,
+        usuarioNombre: req.usuario.usuario
+      });
+      
+      // Descontar del inventario si corresponde
+      if (gasto.inventarioId && gasto.cantidadUsada) {
+        await Inventario.findByIdAndUpdate(
+          gasto.inventarioId,
+          { $inc: { stock: -gasto.cantidadUsada } }
+        );
+      }
+      
+      gastosCreados.push(nuevoGasto);
+    }
     
     res.status(201).json({
       success: true,
@@ -113,7 +143,6 @@ router.put('/:id', verificarToken, async (req, res) => {
       });
     }
     
-    // Verificar permisos (solo admin o el creador pueden editar)
     if (req.usuario.rol !== 'admin' && gasto.usuario.toString() !== req.usuario.id) {
       return res.status(403).json({
         success: false,
@@ -121,7 +150,6 @@ router.put('/:id', verificarToken, async (req, res) => {
       });
     }
     
-    // Actualizar campos
     if (descripcion) gasto.descripcion = descripcion;
     if (valor) gasto.valor = valor;
     if (inventario !== undefined) gasto.inventario = inventario;
@@ -155,7 +183,6 @@ router.delete('/:id', verificarToken, async (req, res) => {
       });
     }
     
-    // Verificar permisos (solo admin o el creador pueden eliminar)
     if (req.usuario.rol !== 'admin' && gasto.usuario.toString() !== req.usuario.id) {
       return res.status(403).json({
         success: false,
@@ -178,7 +205,5 @@ router.delete('/:id', verificarToken, async (req, res) => {
     });
   }
 });
-
-
 
 module.exports = router;
