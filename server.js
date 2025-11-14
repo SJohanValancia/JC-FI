@@ -58,6 +58,7 @@ mongoose.connection.on('disconnected', () => {
 // Rutas
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/gastos', require('./routes/gastos'));
+app.use('/api/inventario', require('./routes/inventario'));
 
 // Ruta de prueba
 app.get('/', (req, res) => {

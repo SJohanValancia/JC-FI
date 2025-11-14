@@ -1,0 +1,56 @@
+const mongoose = require('mongoose');
+
+const inventarioSchema = new mongoose.Schema({
+  nombre: {
+    type: String,
+    required: [true, 'El nombre del producto es obligatorio'],
+    trim: true
+  },
+  precio: {
+    type: Number,
+    required: [true, 'El precio es obligatorio'],
+    min: [0, 'El precio debe ser positivo']
+  },
+  litros: {
+    type: Number,
+    default: null,
+    min: [0, 'Los litros deben ser positivos']
+  },
+  categoria: {
+    type: String,
+    required: [true, 'La categoría es obligatoria'],
+    enum: ['Fertilizante', 'Semillas', 'Herramientas', 'Químicos', 'Insumos', 'Otro'],
+    default: 'Otro'
+  },
+  stock: {
+    type: Number,
+    required: [true, 'El stock es obligatorio'],
+    min: [0, 'El stock debe ser positivo'],
+    default: 0
+  },
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  usuarioNombre: {
+    type: String,
+    required: true
+  },
+  fechaCreacion: {
+    type: Date,
+    default: Date.now
+  },
+  actualizado: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Actualizar fecha de modificación antes de guardar
+inventarioSchema.pre('save', function(next) {
+  this.actualizado = Date.now();
+  next();
+});
+
+module.exports = mongoose.model('Inventario', inventarioSchema);

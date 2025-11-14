@@ -3,10 +3,10 @@ const router = express.Router();
 const Gasto = require('../models/Gasto');
 const { verificarToken } = require('../middleware/auth');
 
-// Obtener todos los gastos
+// Obtener todos los gastos del usuario
 router.get('/', verificarToken, async (req, res) => {
   try {
-    const gastos = await Gasto.find()
+    const gastos = await Gasto.find({ usuario: req.usuario.id })
       .populate('usuario', 'nombre usuario')
       .sort({ fechaCreacion: -1 });
     
@@ -178,5 +178,7 @@ router.delete('/:id', verificarToken, async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = router;

@@ -441,12 +441,15 @@ if (rememberCheckbox.checked) {
                     // Mostrar información del usuario
                     console.log('Usuario:', data.usuario);
                     console.log('Token:', data.token);
+setTimeout(() => {
+    // Redirigir según el rol
+    if (data.usuario.rol === 'admin') {
+        window.location.href = 'dashboard.html'; // Dashboard del admin
+    } else {
+        showAlert(`Bienvenido(a) ${data.usuario.nombre}! Dashboard de ${data.usuario.rol} próximamente`, 'success');
+    }
+}, 2000);
 
-                    setTimeout(() => {
-                        // Aquí redirigirías a tu dashboard principal
-                        // window.location.href = 'dashboard.html';
-                        showAlert(`Bienvenido(a) ${data.usuario.nombre}!`, 'success');
-                    }, 2000);
                 } else {
                     showAlert(data.message || 'Error al iniciar sesión', 'error');
                     submitBtn.disabled = false;
