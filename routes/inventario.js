@@ -194,4 +194,39 @@ router.get('/stats/resumen', verificarToken, async (req, res) => {
   }
 });
 
+// Obtener alertas de stock bajo
+router.get('/alertas/stock-bajo', verificarToken, async (req, res) => {
+  try {
+    // Limite configurable (por defecto 5 unidades)
+    const limite = parseInt(req.query.limite) || 5;
+    
+    const productosBajoStock = await Inventario.find({
+      usuario: req.usuario.id,
+      stock: { $lte: limite }
+    }).sort({ stock: 1 }); // Ordenar por stock ascendente
+    
+    const alertas = productosBajoStock.map(producto => ({
+      id: producto._id,
+      nombre: producto.nombre,
+      stock: producto.stock,
+      categoria: producto.categoria,
+      precio: producto.precio
+    }));
+    
+    res.json({
+      success: true,
+      alertas,
+      total: alertas.length,
+      limite
+    });
+  } catch (error) {
+    console.error('Error al verificar stock bajo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al verificar stock bajo',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -585,6 +585,95 @@
                 align-items: flex-start;
             }
         }
+
+        /* Optimización de rendimiento - Transiciones más rápidas */
+* {
+    transition-duration: 0.2s !important;
+}
+
+.product-card,
+.stat-card,
+.card {
+    will-change: transform;
+}
+
+/* Skeleton loading para mejor UX */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-card {
+    height: 200px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+/* Alerta de Stock Bajo */
+.alerta-stock {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #92400e;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    animation: slideDown 0.4s ease;
+}
+
+.alerta-stock-icon {
+    font-size: 24px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.alerta-stock-content {
+    flex: 1;
+}
+
+.alerta-stock-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.alerta-stock-item {
+    font-size: 14px;
+    margin-bottom: 4px;
+    padding-left: 20px;
+}
+
+.alerta-stock-close {
+    background: none;
+    border: none;
+    color: #92400e;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.alerta-stock-close:hover {
+    background: rgba(146, 64, 14, 0.1);
+}
     </style>
 </head>
 <body>
@@ -907,7 +996,12 @@ async function cargarInventario() {
     const container = document.getElementById('productsList');
     const loading = document.getElementById('loading');
 
-    loading.classList.add('active');
+    // Mostrar skeleton mientras carga
+    container.innerHTML = `
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+    `;
 
     try {
         const token = localStorage.getItem('token');
@@ -923,25 +1017,20 @@ async function cargarInventario() {
         if (data.success) {
             allProducts = data.inventario;
             mostrarProductos(allProducts);
-            actualizarFiltrosCategorias(); // Nueva función
+            actualizarFiltrosCategorias();
         }
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error al cargar inventario', 'error');
-    } finally {
-        loading.classList.remove('active');
     }
 }
 
-// Agregar esta nueva función antes de cerrar el script:
 function actualizarFiltrosCategorias() {
     const categorias = [...new Set(allProducts.map(p => p.categoria))].sort();
     const selectCategoria = document.getElementById('filtrarCategoria');
     
-    // Mantener la opción "Todas"
     selectCategoria.innerHTML = '<option value="">Todas las categorías</option>';
     
-    // Agregar categorías dinámicas
     categorias.forEach(cat => {
         const option = document.createElement('option');
         option.value = cat;
@@ -949,73 +1038,81 @@ function actualizarFiltrosCategorias() {
         selectCategoria.appendChild(option);
     });
 }
-    function mostrarProductos(productos) {
-        const container = document.getElementById('productsList');
 
-        if (productos.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📦</div>
-                    <p class="empty-text">No hay productos registrados</p>
-                </div>
-            `;
-            return;
-        }
 
-        container.innerHTML = '';
-        productos.forEach(producto => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `
-                <div class="product-header">
-                    <div style="flex: 1;">
-                        <div class="product-name">${producto.nombre}</div>
-                        <span class="category-badge">${producto.categoria}</span>
-                    </div>
-                </div>
-                <div class="product-price">$${producto.precio.toLocaleString('es-CO')}</div>
-                ${producto.litros ? `
-                    <div style="margin-top: 10px; color: var(--text-light); font-size: 14px;">
-                        💧 ${producto.litros} litros
-                    </div>
-                ` : ''}
-                <div class="product-info">
-                    <div class="info-item">
-                        <div class="info-label">Stock</div>
-                        <div class="info-value">${producto.stock}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Valor Total</div>
-                        <div class="info-value">$${(producto.precio * producto.stock).toLocaleString('es-CO')}</div>
-                    </div>
-                </div>
-                <div class="product-actions">
-                    <button onclick="editarProducto('${producto._id}')" class="btn-edit">
-                        ✏️ Editar
-                    </button>
-                    <button onclick="eliminarProducto('${producto._id}')" class="btn-delete">
-                        🗑️ Eliminar
-                    </button>
-                </div>
-            `;
-            container.appendChild(card);
-        });
+function mostrarProductos(productos) {
+    const container = document.getElementById('productsList');
+
+    if (productos.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📦</div>
+                <p class="empty-text">No hay productos registrados</p>
+            </div>
+        `;
+        return;
     }
 
-    function filtrarProductos() {
+    const fragment = document.createDocumentFragment();
+    
+    productos.forEach(producto => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+            <div class="product-header">
+                <div style="flex: 1;">
+                    <div class="product-name">${producto.nombre}</div>
+                    <span class="category-badge">${producto.categoria}</span>
+                </div>
+            </div>
+            <div class="product-price">$${producto.precio.toLocaleString('es-CO')}</div>
+            ${producto.litros ? `
+                <div style="margin-top: 10px; color: var(--text-light); font-size: 14px;">
+                    💧 ${producto.litros} litros
+                </div>
+            ` : ''}
+            <div class="product-info">
+                <div class="info-item">
+                    <div class="info-label">Stock</div>
+                    <div class="info-value">${producto.stock}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Valor Total</div>
+                    <div class="info-value">$${(producto.precio * producto.stock).toLocaleString('es-CO')}</div>
+                </div>
+            </div>
+            <div class="product-actions">
+                <button onclick="editarProducto('${producto._id}')" class="btn-edit">
+                    ✏️ Editar
+                </button>
+                <button onclick="eliminarProducto('${producto._id}')" class="btn-delete">
+                    🗑️ Eliminar
+                </button>
+            </div>
+        `;
+        fragment.appendChild(card);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(fragment);
+}
+
+
+let filtroTimeout;
+function filtrarProductos() {
+    clearTimeout(filtroTimeout);
+    filtroTimeout = setTimeout(() => {
         const buscarNombre = document.getElementById('buscarNombre').value.toLowerCase().trim();
         const filtrarCategoria = document.getElementById('filtrarCategoria').value;
 
         let productosFiltrados = allProducts;
 
-        // Filtrar por nombre
         if (buscarNombre) {
             productosFiltrados = productosFiltrados.filter(producto => 
                 producto.nombre.toLowerCase().includes(buscarNombre)
             );
         }
 
-        // Filtrar por categoría
         if (filtrarCategoria) {
             productosFiltrados = productosFiltrados.filter(producto => 
                 producto.categoria === filtrarCategoria
@@ -1023,7 +1120,8 @@ function actualizarFiltrosCategorias() {
         }
 
         mostrarProductos(productosFiltrados);
-    }
+    }, 200);
+}
 
     async function editarProducto(id) {
         try {
