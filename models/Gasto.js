@@ -11,20 +11,18 @@ const gastoSchema = new mongoose.Schema({
     required: [true, 'El valor es obligatorio'],
     min: [0, 'El valor debe ser positivo']
   },
-  inventario: {
-    type: String,
-    default: null
-  },
-  inventarioId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Inventario',
-    default: null
-  },
-  cantidadUsada: {
-    type: Number,
-    default: null,
-    min: [0, 'La cantidad debe ser positiva']
-  },
+  // Cambiamos de String simple a Array de objetos
+  productosInventario: [{
+    inventarioId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Inventario',
+    },
+    nombre: String,
+    cantidadUsada: {
+      type: Number,
+      min: [0, 'La cantidad debe ser positiva']
+    }
+  }],
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -53,77 +53,91 @@ router.get('/:id', verificarToken, async (req, res) => {
 });
 
 // Crear gastos (uno o varios) con descuento de inventario
+// Crear gasto (único) con descuento de inventario
 router.post('/', verificarToken, async (req, res) => {
   try {
-    const { gastos } = req.body;
+    const { descripcion, valor, productosInventario } = req.body;
     
-    if (!gastos || !Array.isArray(gastos) || gastos.length === 0) {
+    if (!descripcion || !valor || valor <= 0) {
       return res.status(400).json({
         success: false,
-        message: 'Debe proporcionar al menos un gasto'
+        message: 'Debe proporcionar descripción y valor válido'
       });
     }
-    
-    // Validar cada gasto
-    for (let gasto of gastos) {
-      if (!gasto.descripcion || !gasto.valor || gasto.valor <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Todos los gastos deben tener descripción y valor válido'
-        });
-      }
-      
-      // Si tiene inventarioId, validar que existe y hay suficiente stock
-      if (gasto.inventarioId && gasto.cantidadUsada) {
-        const producto = await Inventario.findById(gasto.inventarioId);
+
+    // Validar productos del inventario
+    if (productosInventario && productosInventario.length > 0) {
+      for (let prod of productosInventario) {
+        const producto = await Inventario.findById(prod.inventarioId);
         if (!producto) {
           return res.status(404).json({
             success: false,
-            message: `El producto ${gasto.inventario} no existe`
+            message: `El producto ${prod.nombre} no existe`
           });
         }
         
-        if (producto.stock < gasto.cantidadUsada) {
+        if (producto.stock < prod.cantidadUsada) {
           return res.status(400).json({
             success: false,
-            message: `Stock insuficiente de ${gasto.inventario}. Disponible: ${producto.stock}`
+            message: `Stock insuficiente de ${prod.nombre}. Disponible: ${producto.stock}`
           });
         }
       }
     }
     
-    // Crear gastos y descontar inventario
-    const gastosCreados = [];
+    // Crear el gasto
+    const nuevoGasto = await Gasto.create({
+      descripcion,
+      valor,
+      productosInventario: productosInventario || [],
+      usuario: req.usuario.id,
+      usuarioNombre: req.usuario.usuario
+    });
     
-    for (let gasto of gastos) {
-      // Crear el gasto
-      const nuevoGasto = await Gasto.create({
-        ...gasto,
-        usuario: req.usuario.id,
-        usuarioNombre: req.usuario.usuario
-      });
-      
-      // Descontar del inventario si corresponde
-      if (gasto.inventarioId && gasto.cantidadUsada) {
+    // Descontar del inventario
+    if (productosInventario && productosInventario.length > 0) {
+      for (let prod of productosInventario) {
         await Inventario.findByIdAndUpdate(
-          gasto.inventarioId,
-          { $inc: { stock: -gasto.cantidadUsada } }
+          prod.inventarioId,
+          { $inc: { stock: -prod.cantidadUsada } }
         );
       }
-      
-      gastosCreados.push(nuevoGasto);
     }
     
     res.status(201).json({
       success: true,
-      message: `${gastosCreados.length} gasto(s) creado(s) exitosamente`,
-      gastos: gastosCreados
+      message: 'Gasto registrado exitosamente',
+      gasto: nuevoGasto
     });
   } catch (error) {
-    console.error('Error al crear gastos:', error);
+    console.error('Error al crear gasto:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al crear gastos',
+      message: 'Error al crear gasto',
+      error: error.message
+    });
+  }
+});
+
+// Obtener estadísticas de gastos
+router.get('/stats/resumen', verificarToken, async (req, res) => {
+  try {
+    const gastos = await Gasto.find({ usuario: req.usuario.id });
+    
+    const stats = {
+      totalGastos: gastos.length,
+      totalValor: gastos.reduce((sum, gasto) => sum + gasto.valor, 0)
+    };
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estadísticas',
       error: error.message
     });
   }
