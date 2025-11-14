@@ -9,8 +9,16 @@ router.post('/register', async (req, res) => {
   try {
     const { nombre, usuario, password, rol, finca } = req.body;
     
+    // Validar campos requeridos
+    if (!nombre || !usuario || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Todos los campos obligatorios deben ser completados' 
+      });
+    }
+    
     // Verificar si el usuario ya existe
-    const usuarioExistente = await User.findOne({ usuario });
+    const usuarioExistente = await User.findOne({ usuario: usuario.toLowerCase().trim() });
     if (usuarioExistente) {
       return res.status(400).json({ 
         success: false, 
@@ -20,8 +28,8 @@ router.post('/register', async (req, res) => {
     
     // Crear nuevo usuario
     const nuevoUsuario = new User({
-      nombre,
-      usuario,
+      nombre: nombre.trim(),
+      usuario: usuario.toLowerCase().trim(),
       password,
       rol: rol || 'trabajador',
       finca: finca || ''
@@ -55,6 +63,24 @@ router.post('/register', async (req, res) => {
     
   } catch (error) {
     console.error('Error en registro:', error);
+    
+    // Manejar errores de validación de Mongoose
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(', ')
+      });
+    }
+    
+    // Manejar error de duplicado
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'El usuario ya existe' 
+      });
+    }
+    
     res.status(500).json({ 
       success: false, 
       message: 'Error al registrar usuario',
@@ -68,8 +94,16 @@ router.post('/login', async (req, res) => {
   try {
     const { usuario, password } = req.body;
     
+    // Validar campos
+    if (!usuario || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Usuario y contraseña son requeridos' 
+      });
+    }
+    
     // Verificar si el usuario existe
-    const usuarioEncontrado = await User.findOne({ usuario });
+    const usuarioEncontrado = await User.findOne({ usuario: usuario.toLowerCase().trim() });
     if (!usuarioEncontrado) {
       return res.status(401).json({ 
         success: false, 
@@ -128,15 +162,22 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Verificar token (ruta protegida de ejemplo)
+// Verificar token
 router.get('/verificar', verificarToken, async (req, res) => {
   try {
     const usuario = await User.findById(req.usuario.id).select('-password');
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
     res.json({
       success: true,
       usuario
     });
   } catch (error) {
+    console.error('Error al verificar token:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al verificar token' 
