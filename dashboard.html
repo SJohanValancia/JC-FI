@@ -715,6 +715,13 @@ select:hover {
         inicializarDashboard();
     });
 
+        function inicializarDashboard() {
+        actualizarSaludo();
+        actualizarHora();
+        setInterval(actualizarHora, 60000);
+        cargarGastos();
+    }
+
 async function cargarProductosInventario() {
     try {
         const token = localStorage.getItem('token');
@@ -817,7 +824,7 @@ async function generarFormularios() {
                     <input type="number" id="valor${i}" placeholder="Ej: 50000" min="0" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label for="inventario${i}">¿Usaste algo del inventario? (Opcional)</label>
+                    <label for="inventario${i}">¿Usaste algo del inventario? (Opcional, se descontara de tu inventario)</label>
                     <div style="position: relative;">
                         <input type="text" id="inventario${i}" placeholder="Buscar producto..." 
                                oninput="filtrarInventario(${i})" 
@@ -1065,30 +1072,34 @@ async function guardarGastos() {
         }
     }
 
-    async function editarGasto(id) {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/gastos/${id}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+async function editarGasto(id) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/gastos/${id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            if (data.success) {
-                const gasto = data.gasto;
-                editingExpenseId = id;
+        if (data.success) {
+            const gasto = data.gasto;
+            editingExpenseId = id;
 
-                // Llenar formulario
-                document.getElementById('numGastos').value = '1';
-                generarFormularios();
+            // Llenar formulario
+            document.getElementById('numGastos').value = '1';
+            
+            // ESPERAR a que se generen los formularios
+            await generarFormularios();
 
+            // Ahora sí llenar los campos (después de que existan)
+            setTimeout(() => {
                 document.getElementById('desc1').value = gasto.descripcion;
                 document.getElementById('valor1').value = gasto.valor;
                 document.getElementById('inventario1').value = gasto.inventario || '';
-
+                
                 const saveBtn = document.getElementById('saveBtn');
                 saveBtn.textContent = '💾 Actualizar Gasto';
                 saveBtn.onclick = () => actualizarGasto(id);
@@ -1096,13 +1107,13 @@ async function guardarGastos() {
                 // Scroll al formulario
                 document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
                 showAlert('Editando gasto. Modifica los campos y guarda', 'success');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('Error al cargar gasto para editar', 'error');
+            }, 100);
         }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error al cargar gasto para editar', 'error');
     }
-
+}
     async function actualizarGasto(id) {
         const descripcion = document.getElementById('desc1').value.trim();
         const valor = parseFloat(document.getElementById('valor1').value);
