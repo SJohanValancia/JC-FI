@@ -19,8 +19,8 @@ const inventarioSchema = new mongoose.Schema({
   categoria: {
     type: String,
     required: [true, 'La categoría es obligatoria'],
-    enum: ['Fertilizante', 'Semillas', 'Herramientas', 'Químicos', 'Insumos', 'Otro'],
-    default: 'Otro'
+    trim: true
+    // Eliminamos el enum para aceptar cualquier texto
   },
   stock: {
     type: Number,

@@ -529,6 +529,71 @@
     text-decoration: none;
 }
 
+/* Estilos mejorados para selects e inputs */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a7c2c' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    padding-right: 45px;
+    cursor: pointer;
+}
+
+select:hover {
+    border-color: var(--primary-light);
+}
+
+/* Lista de inventario desplegable */
+.lista-inventario {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 8px 25px var(--shadow-lg);
+    margin-top: 5px;
+}
+
+.item-inventario {
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border);
+}
+
+.item-inventario:last-child {
+    border-bottom: none;
+}
+
+.item-inventario:hover {
+    background: var(--bg-light);
+    padding-left: 20px;
+}
+
+/* Scrollbar para la lista */
+.lista-inventario::-webkit-scrollbar {
+    width: 8px;
+}
+
+.lista-inventario::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 10px;
+}
+
+.lista-inventario::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+}
+
+.lista-inventario::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -650,12 +715,27 @@
         inicializarDashboard();
     });
 
-    function inicializarDashboard() {
-        actualizarSaludo();
-        actualizarHora();
-        setInterval(actualizarHora, 60000);
-        cargarGastos();
+async function cargarProductosInventario() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/inventario`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.inventario;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error al cargar inventario:', error);
+        return [];
     }
+}
 
     function actualizarSaludo() {
         const hora = new Date().getHours();
@@ -709,116 +789,207 @@
         });
     });
 
-    function generarFormularios() {
-        const num = parseInt(document.getElementById('numGastos').value);
-        const container = document.getElementById('expensesContainer');
-        const saveBtn = document.getElementById('saveBtn');
+async function generarFormularios() {
+    const num = parseInt(document.getElementById('numGastos').value);
+    const container = document.getElementById('expensesContainer');
+    const saveBtn = document.getElementById('saveBtn');
 
-        container.innerHTML = '';
-        editingExpenseId = null;
+    container.innerHTML = '';
+    editingExpenseId = null;
 
-        if (num > 0 && num <= 20) {
-            for (let i = 1; i <= num; i++) {
-                const div = document.createElement('div');
-                div.className = 'expense-item';
-                div.innerHTML = `
-                    <div class="expense-header">
-                        <div class="expense-number">${i}</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="desc${i}">Descripción del gasto</label>
-                        <input type="text" id="desc${i}" placeholder="Ej: Compra de fertilizante" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="valor${i}">Valor ($)</label>
-                        <input type="number" id="valor${i}" placeholder="Ej: 50000" min="0" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="inventario${i}">¿Usaste algo del inventario? (Opcional)</label>
-                        <select id="inventario${i}">
-                            <option value="">-- No aplica --</option>
-                            <option value="Fertilizante">Fertilizante</option>
-                            <option value="Semillas">Semillas</option>
-                            <option value="Herramientas">Herramientas</option>
-                            <option value="Químicos">Químicos</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-                `;
-                container.appendChild(div);
-            }
-            saveBtn.style.display = 'block';
-            saveBtn.textContent = '💾 Guardar Gastos';
-        } else {
-            saveBtn.style.display = 'none';
-        }
-    }
-
-    async function guardarGastos() {
-        const num = parseInt(document.getElementById('numGastos').value);
-        const gastos = [];
-        let valido = true;
-
+    if (num > 0 && num <= 20) {
+        // Cargar productos del inventario
+        const productos = await cargarProductosInventario();
+        
         for (let i = 1; i <= num; i++) {
-            const descripcion = document.getElementById(`desc${i}`).value.trim();
-            const valor = parseFloat(document.getElementById(`valor${i}`).value);
-            const inventario = document.getElementById(`inventario${i}`).value;
+            const div = document.createElement('div');
+            div.className = 'expense-item';
+            div.innerHTML = `
+                <div class="expense-header">
+                    <div class="expense-number">${i}</div>
+                </div>
+                <div class="form-group">
+                    <label for="desc${i}">Descripción del gasto</label>
+                    <input type="text" id="desc${i}" placeholder="Ej: Compra de fertilizante" required>
+                </div>
+                <div class="form-group">
+                    <label for="valor${i}">Valor ($)</label>
+                    <input type="number" id="valor${i}" placeholder="Ej: 50000" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="inventario${i}">¿Usaste algo del inventario? (Opcional)</label>
+                    <div style="position: relative;">
+                        <input type="text" id="inventario${i}" placeholder="Buscar producto..." 
+                               oninput="filtrarInventario(${i})" 
+                               onfocus="mostrarListaInventario(${i})"
+                               style="padding-right: 40px;">
+                        <button type="button" onclick="limpiarInventario(${i})" 
+                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); 
+                                       background: none; border: none; cursor: pointer; font-size: 18px; color: #999;">
+                            ✕
+                        </button>
+                    </div>
+                    <div id="listaInventario${i}" class="lista-inventario" style="display: none;"></div>
+                    <input type="hidden" id="inventarioId${i}">
+                </div>
+            `;
+            container.appendChild(div);
+            
+            // Crear lista de productos para este campo
+            crearListaInventario(i, productos);
+        }
+        saveBtn.style.display = 'block';
+        saveBtn.textContent = '💾 Guardar Gastos';
+    } else {
+        saveBtn.style.display = 'none';
+    }
+}
 
-            if (!descripcion || !valor || valor <= 0) {
-                showAlert(`Por favor completa todos los campos del gasto #${i}`, 'error');
-                valido = false;
-                break;
-            }
+let productosInventario = [];
 
-            gastos.push({
-                descripcion,
-                valor,
-                inventario: inventario || null
-            });
+function crearListaInventario(indice, productos) {
+    productosInventario[indice] = productos;
+}
+
+function filtrarInventario(indice) {
+    const input = document.getElementById(`inventario${indice}`);
+    const lista = document.getElementById(`listaInventario${indice}`);
+    const filtro = input.value.toLowerCase().trim();
+    
+    if (!filtro) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    const productosFiltrados = productosInventario[indice].filter(p => 
+        p.nombre.toLowerCase().includes(filtro) || 
+        p.categoria.toLowerCase().includes(filtro)
+    );
+    
+    if (productosFiltrados.length === 0) {
+        lista.innerHTML = '<div style="padding: 10px; color: #999;">No se encontraron productos</div>';
+        lista.style.display = 'block';
+        return;
+    }
+    
+    lista.innerHTML = productosFiltrados.map(p => `
+        <div class="item-inventario" onclick="seleccionarProducto(${indice}, '${p._id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.categoria}')">
+            <div style="font-weight: 600; color: var(--primary-dark);">${p.nombre}</div>
+            <div style="font-size: 12px; color: var(--text-light);">
+                ${p.categoria} | Stock: ${p.stock} | $${p.precio.toLocaleString('es-CO')}
+            </div>
+        </div>
+    `).join('');
+    
+    lista.style.display = 'block';
+}
+
+function mostrarListaInventario(indice) {
+    const input = document.getElementById(`inventario${indice}`);
+    const lista = document.getElementById(`listaInventario${indice}`);
+    
+    if (input.value.trim()) {
+        filtrarInventario(indice);
+    } else {
+        // Mostrar todos los productos
+        lista.innerHTML = productosInventario[indice].map(p => `
+            <div class="item-inventario" onclick="seleccionarProducto(${indice}, '${p._id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.categoria}')">
+                <div style="font-weight: 600; color: var(--primary-dark);">${p.nombre}</div>
+                <div style="font-size: 12px; color: var(--text-light);">
+                    ${p.categoria} | Stock: ${p.stock} | $${p.precio.toLocaleString('es-CO')}
+                </div>
+            </div>
+        `).join('');
+        lista.style.display = 'block';
+    }
+}
+
+function seleccionarProducto(indice, id, nombre, categoria) {
+    document.getElementById(`inventario${indice}`).value = nombre;
+    document.getElementById(`inventarioId${indice}`).value = id;
+    document.getElementById(`listaInventario${indice}`).style.display = 'none';
+}
+
+function limpiarInventario(indice) {
+    document.getElementById(`inventario${indice}`).value = '';
+    document.getElementById(`inventarioId${indice}`).value = '';
+    document.getElementById(`listaInventario${indice}`).style.display = 'none';
+}
+
+// Cerrar listas al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.form-group')) {
+        document.querySelectorAll('.lista-inventario').forEach(lista => {
+            lista.style.display = 'none';
+        });
+    }
+});
+
+async function guardarGastos() {
+    const num = parseInt(document.getElementById('numGastos').value);
+    const gastos = [];
+    let valido = true;
+
+    for (let i = 1; i <= num; i++) {
+        const descripcion = document.getElementById(`desc${i}`).value.trim();
+        const valor = parseFloat(document.getElementById(`valor${i}`).value);
+        const inventario = document.getElementById(`inventario${i}`).value;
+        const inventarioId = document.getElementById(`inventarioId${i}`).value;
+
+        if (!descripcion || !valor || valor <= 0) {
+            showAlert(`Por favor completa todos los campos del gasto #${i}`, 'error');
+            valido = false;
+            break;
         }
 
-        if (valido) {
-            const loading = document.getElementById('loading');
-            const saveBtn = document.getElementById('saveBtn');
-            
-            loading.classList.add('active');
-            saveBtn.disabled = true;
+        gastos.push({
+            descripcion,
+            valor,
+            inventario: inventario || null,
+            inventarioId: inventarioId || null
+        });
+    }
 
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/gastos`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ gastos })
-                });
+    if (valido) {
+        const loading = document.getElementById('loading');
+        const saveBtn = document.getElementById('saveBtn');
+        
+        loading.classList.add('active');
+        saveBtn.disabled = true;
 
-                const data = await response.json();
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/gastos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ gastos })
+            });
 
-                if (data.success) {
-                    showAlert(`✅ ${gastos.length} gasto(s) registrado(s) exitosamente`, 'success');
-                    
-                    // Limpiar formulario
-                    document.getElementById('numGastos').value = '';
-                    document.getElementById('expensesContainer').innerHTML = '';
-                    saveBtn.style.display = 'none';
+            const data = await response.json();
 
-                    // Recargar lista
-                    cargarGastos();
-                } else {
-                    showAlert(data.message || 'Error al guardar gastos', 'error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error de conexión al guardar gastos', 'error');
-            } finally {
-                loading.classList.remove('active');
-                saveBtn.disabled = false;
+            if (data.success) {
+                showAlert(`✅ ${gastos.length} gasto(s) registrado(s) exitosamente`, 'success');
+                
+                document.getElementById('numGastos').value = '';
+                document.getElementById('expensesContainer').innerHTML = '';
+                saveBtn.style.display = 'none';
+
+                cargarGastos();
+            } else {
+                showAlert(data.message || 'Error al guardar gastos', 'error');
             }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error de conexión al guardar gastos', 'error');
+        } finally {
+            loading.classList.remove('active');
+            saveBtn.disabled = false;
         }
     }
+}
 
     async function cargarGastos() {
         const container = document.getElementById('expensesList');

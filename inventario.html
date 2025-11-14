@@ -670,18 +670,11 @@
                         <label for="litros">Litros (Opcional)</label>
                         <input type="number" id="litros" placeholder="Ej: 5" min="0" step="0.01">
                     </div>
-                    <div class="form-group">
-                        <label for="categoria">Categoría *</label>
-                        <select id="categoria" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="Fertilizante">Fertilizante</option>
-                            <option value="Semillas">Semillas</option>
-                            <option value="Herramientas">Herramientas</option>
-                            <option value="Químicos">Químicos</option>
-                            <option value="Insumos">Insumos</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
+<!-- En la sección del formulario, reemplaza el select de categoría -->
+<div class="form-group">
+    <label for="categoria">Categoría *</label>
+    <input type="text" id="categoria" placeholder="Ej: Fertilizante, Semillas..." required>
+</div>
                     <div class="form-group">
                         <label for="stock">Stock *</label>
                         <input type="number" id="stock" placeholder="Ej: 10" min="0" required>
@@ -856,35 +849,53 @@
         }
     }
 
-    async function cargarInventario() {
-        const container = document.getElementById('productsList');
-        const loading = document.getElementById('loading');
+// En el script, reemplaza la función cargarInventario con esta versión mejorada:
+async function cargarInventario() {
+    const container = document.getElementById('productsList');
+    const loading = document.getElementById('loading');
 
-        loading.classList.add('active');
+    loading.classList.add('active');
 
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/inventario`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                allProducts = data.inventario;
-                mostrarProductos(allProducts);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/inventario`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('Error al cargar inventario', 'error');
-        } finally {
-            loading.classList.remove('active');
-        }
-    }
+        });
 
+        const data = await response.json();
+
+        if (data.success) {
+            allProducts = data.inventario;
+            mostrarProductos(allProducts);
+            actualizarFiltrosCategorias(); // Nueva función
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error al cargar inventario', 'error');
+    } finally {
+        loading.classList.remove('active');
+    }
+}
+
+// Agregar esta nueva función antes de cerrar el script:
+function actualizarFiltrosCategorias() {
+    const categorias = [...new Set(allProducts.map(p => p.categoria))].sort();
+    const selectCategoria = document.getElementById('filtrarCategoria');
+    
+    // Mantener la opción "Todas"
+    selectCategoria.innerHTML = '<option value="">Todas las categorías</option>';
+    
+    // Agregar categorías dinámicas
+    categorias.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        selectCategoria.appendChild(option);
+    });
+}
     function mostrarProductos(productos) {
         const container = document.getElementById('productsList');
 
