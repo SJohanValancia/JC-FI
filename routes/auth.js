@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { verificarToken } = require('../middleware/auth');
+const fetch = require('node-fetch');
 
 // Registro de usuario
 router.post('/register', async (req, res) => {
