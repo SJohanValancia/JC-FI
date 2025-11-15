@@ -52,7 +52,6 @@ router.get('/:id', verificarToken, async (req, res) => {
   }
 });
 
-// Crear gastos (uno o varios) con descuento de inventario
 // Crear gasto (único) con descuento de inventario
 router.post('/', verificarToken, async (req, res) => {
   try {
@@ -119,7 +118,7 @@ router.post('/', verificarToken, async (req, res) => {
   }
 });
 
-// Obtener estadísticas de gastos
+// Obtener estadísticas
 router.get('/stats/resumen', verificarToken, async (req, res) => {
   try {
     const gastos = await Gasto.find({ usuario: req.usuario.id });
