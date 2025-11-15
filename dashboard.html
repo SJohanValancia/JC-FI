@@ -1066,25 +1066,36 @@ select:hover {
             <div class="sidebar-title">Sistema Fincas</div>
         </div>
 
-        <nav>
-            <div class="menu-item active" data-section="gastos">
-                <span class="menu-icon">💰</span>
-                <span>Gastos</span>
-            </div>
-<a href="inventario.html" class="menu-item">
-    <span class="menu-icon">📦</span>
-    <span>Inventario</span>
-</a>
-            <div class="menu-item" data-section="reportes">
-                <span class="menu-icon">📊</span>
-                <span>Reportes</span>
-            </div>
-            <div class="menu-item" data-section="usuarios">
-                <span class="menu-icon">👥</span>
-                <span>Usuarios</span>
-            </div>
-        </nav>
-
+      <!-- En el sidebar de dashboard.html, agregar estos dos nuevos items -->
+<nav>
+    <div class="menu-item active" data-section="gastos">
+        <span class="menu-icon">💰</span>
+        <span>Gastos</span>
+    </div>
+    <a href="inventario.html" class="menu-item">
+        <span class="menu-icon">📦</span>
+        <span>Inventario</span>
+    </a>
+    
+    <!-- 🔥 NUEVOS ENLACES - SISTEMA DE FRUTAS -->
+    <a href="#" class="menu-item" onclick="abrirRecogidaFrutas(event)">
+        <span class="menu-icon">🍎</span>
+        <span>Nueva Recogida Frutas</span>
+    </a>
+    <a href="#" class="menu-item" onclick="abrirHistorialFrutas(event)">
+        <span class="menu-icon">📋</span>
+        <span>Historial Frutas</span>
+    </a>
+    
+    <div class="menu-item" data-section="reportes">
+        <span class="menu-icon">📊</span>
+        <span>Reportes</span>
+    </div>
+    <div class="menu-item" data-section="usuarios">
+        <span class="menu-icon">👥</span>
+        <span>Usuarios</span>
+    </div>
+</nav>
         <button class="logout-btn" onclick="cerrarSesion()">
             🚪 Cerrar Sesión
         </button>
@@ -1631,18 +1642,28 @@ async function guardarGastos() {
 
     if (!valido) return;
 
-    if (num > 0) {
-        // Crear un único gasto con todos los productos
-        gastos.push({
-            descripcion: `Gasto múltiple (${num} ítem(s))`,
-            valor: parseFloat(document.getElementById('valor1').value), // Usamos el valor del primer formulario
-            productosInventario: todosLosProductos.map(p => ({
-                inventarioId: p.id,
-                nombre: p.nombre,
-                cantidadUsada: p.cantidad
-            }))
-        });
+// Crear gastos individuales con sus propios productos
+for (let i = 1; i <= num; i++) {
+    const descripcion = document.getElementById(`desc${i}`).value.trim();
+    const valor = parseFloat(document.getElementById(`valor${i}`).value);
+    const inventarioIdsJson = document.getElementById(`inventarioIds${i}`).value;
+    
+    const productosDelGasto = [];
+    if (inventarioIdsJson && inventarioIdsJson !== '') {
+        const productos = JSON.parse(inventarioIdsJson);
+        productosDelGasto.push(...productos.map(p => ({
+            inventarioId: p.id,
+            nombre: p.nombre,
+            cantidadUsada: p.cantidad
+        })));
     }
+    
+    gastos.push({
+        descripcion: descripcion, // ✅ Ahora usa la descripción real
+        valor: valor,
+        productosInventario: productosDelGasto
+    });
+}
 
     if (gastos.length === 0) {
         showAlert('No hay gastos para guardar', 'error');
@@ -2003,6 +2024,323 @@ function cerrarSesion() {
         </div>
     </div>
 </div>
+
+<script>
+// 🔥 SISTEMA DE INTEGRACIÓN HÍBRIDA - PROGRAMA PRINCIPAL + FRUTAS
+
+// Función para sincronizar datos de sesión entre programas
+function sincronizarSesion() {
+    const token = localStorage.getItem('token');
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    
+    if (!token || !usuario) {
+        showAlert('Error: No hay sesión activa', 'error');
+        window.location.href = 'index.html';
+        return null;
+    }
+    
+    // Preparar datos de sesión para el programa de frutas
+    const datosSesion = {
+        token: token,
+        usuario: usuario.usuario || usuario.username,
+        nombre: usuario.nombre,
+        rol: usuario.rol,
+        tipo: usuario.tipo || 1,
+        alias: usuario.alias || usuario.nombre
+    };
+    
+    // Guardar en sessionStorage para compartir con el programa de frutas
+    sessionStorage.setItem('sesionCompartida', JSON.stringify(datosSesion));
+    
+    return datosSesion;
+}
+
+// Función para obtener/seleccionar finca
+async function obtenerFincaSeleccionada() {
+    const fincaGuardada = localStorage.getItem('fincaActual');
+    
+    if (fincaGuardada) {
+        return JSON.parse(fincaGuardada);
+    }
+    
+    // Si no hay finca guardada, mostrar selector
+    return await mostrarSelectorFincas();
+}
+
+// Selector de fincas
+function mostrarSelectorFincas() {
+    return new Promise((resolve, reject) => {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 40px;
+                border-radius: 20px;
+                max-width: 600px;
+                width: 90%;
+                color: white;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            ">
+                <h2 style="margin-bottom: 20px; text-align: center;">🏡 Selecciona una Finca</h2>
+                <p style="text-align: center; opacity: 0.9; margin-bottom: 30px;">
+                    Para registrar recogidas de frutas, primero selecciona la finca
+                </p>
+                <div id="listaFincasModal" style="
+                    max-height: 400px;
+                    overflow-y: auto;
+                    margin-bottom: 20px;
+                ">
+                    <div style="text-align: center; padding: 40px;">
+                        <div class="spinner" style="
+                            border: 3px solid rgba(255,255,255,0.3);
+                            border-top: 3px solid white;
+                            border-radius: 50%;
+                            width: 40px;
+                            height: 40px;
+                            animation: spin 1s linear infinite;
+                            margin: 0 auto;
+                        "></div>
+                        <p style="margin-top: 15px;">Cargando fincas...</p>
+                    </div>
+                </div>
+                <button onclick="cerrarModalFincas()" style="
+                    width: 100%;
+                    padding: 15px;
+                    background: rgba(255,255,255,0.2);
+                    border: 2px solid rgba(255,255,255,0.3);
+                    color: white;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                ">
+                    Cancelar
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Cargar fincas
+        cargarFincasDisponibles(resolve, reject);
+    });
+}
+
+// Cargar fincas desde el servidor de FRUTAS
+async function cargarFincasDisponibles(resolve, reject) {
+    const lista = document.getElementById('listaFincasModal');
+    
+    try {
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        
+        // 🔥 CONSULTAR AL SERVIDOR DE FRUTAS
+        const response = await fetch(`https://jc-frutas.onrender.com/fincas/por-admin/${usuario.nombre}`, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Error al cargar fincas');
+        
+        const fincas = await response.json();
+        
+        if (fincas.length === 0) {
+            lista.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <p style="font-size: 18px; margin-bottom: 20px;">📭 No tienes fincas registradas</p>
+                    <button onclick="irACrearFinca()" style="
+                        padding: 12px 24px;
+                        background: rgba(255,255,255,0.3);
+                        border: 2px solid white;
+                        color: white;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    ">
+                        Crear Primera Finca
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        lista.innerHTML = fincas.map(finca => `
+            <div onclick="window.seleccionarFincaYResolver('${finca._id}', '${finca.nombre.replace(/'/g, "\\'")}', '${finca.propietario.replace(/'/g, "\\'")}', ${JSON.stringify(resolve)})" 
+                 style="
+                    padding: 20px;
+                    margin-bottom: 15px;
+                    background: rgba(255,255,255,0.15);
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    border: 2px solid transparent;
+                 "
+                 onmouseover="this.style.background='rgba(255,255,255,0.25)'; this.style.borderColor='rgba(255,255,255,0.4)'"
+                 onmouseout="this.style.background='rgba(255,255,255,0.15)'; this.style.borderColor='transparent'">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="font-size: 18px; display: block; margin-bottom: 5px;">
+                            🏡 ${finca.nombre}
+                        </strong>
+                        <small style="opacity: 0.8;">
+                            👤 Propietario: ${finca.propietario}
+                        </small>
+                    </div>
+                    <span style="font-size: 24px;">→</span>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error al cargar fincas:', error);
+        lista.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #ff6b6b;">
+                <p style="font-size: 18px;">❌ Error al cargar fincas</p>
+                <p style="opacity: 0.8; margin-top: 10px;">${error.message}</p>
+            </div>
+        `;
+        reject(error);
+    }
+}
+
+// Función global para seleccionar finca
+window.seleccionarFincaYResolver = function(id, nombre, propietario, resolver) {
+    const fincaData = {
+        id: id,
+        nombre: nombre,
+        propietario: propietario
+    };
+    
+    // Guardar finca seleccionada
+    localStorage.setItem('fincaActual', JSON.stringify(fincaData));
+    
+    // Cerrar modal
+    cerrarModalFincas();
+    
+    showAlert(`✅ Finca seleccionada: ${nombre}`, 'success');
+    
+    // Resolver promesa con los datos de la finca
+    if (typeof resolver === 'function') {
+        resolver(fincaData);
+    } else {
+        // Si resolver es una string (por seguridad de JSON.stringify)
+        window.fincaSeleccionadaResolver(fincaData);
+    }
+};
+
+window.fincaSeleccionadaResolver = null;
+
+// Cerrar modal
+window.cerrarModalFincas = function() {
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+};
+
+// Función para ir a crear finca
+window.irACrearFinca = function() {
+    cerrarModalFincas();
+    // Aquí podrías redirigir a una página de creación de finca
+    alert('Función de crear finca por implementar');
+};
+
+// 🔥 FUNCIÓN PRINCIPAL: Abrir Recogida de Frutas
+async function abrirRecogidaFrutas(event) {
+    event.preventDefault();
+    
+    showAlert('Preparando sistema de frutas...', 'success');
+    
+    try {
+        // 1. Sincronizar sesión
+        const sesion = sincronizarSesion();
+        if (!sesion) return;
+        
+        // 2. Obtener/seleccionar finca
+        const finca = await obtenerFincaSeleccionada();
+        if (!finca) {
+            showAlert('Operación cancelada', 'error');
+            return;
+        }
+        
+        // 3. Construir URL para el programa de frutas
+        const params = new URLSearchParams({
+            fincaId: finca.id,
+            finca: encodeURIComponent(finca.nombre),
+            propietario: encodeURIComponent(finca.propietario),
+            usuario: sesion.usuario,
+            usuarioAlias: encodeURIComponent(sesion.alias || sesion.nombre),
+            // 🔥 Parámetro especial para indicar que viene del programa principal
+            origenIntegracion: 'true'
+        });
+        
+        // 4. Abrir página de recogida
+        window.location.href = `recogida.html?${params.toString()}`;
+        
+    } catch (error) {
+        console.error('Error al abrir recogida de frutas:', error);
+        showAlert('Error al abrir sistema de frutas: ' + error.message, 'error');
+    }
+}
+
+// 🔥 FUNCIÓN PRINCIPAL: Abrir Historial de Frutas
+async function abrirHistorialFrutas(event) {
+    event.preventDefault();
+    
+    showAlert('Cargando historial de frutas...', 'success');
+    
+    try {
+        // 1. Sincronizar sesión
+        const sesion = sincronizarSesion();
+        if (!sesion) return;
+        
+        // 2. Obtener/seleccionar finca
+        const finca = await obtenerFincaSeleccionada();
+        if (!finca) {
+            showAlert('Operación cancelada', 'error');
+            return;
+        }
+        
+        // 3. Construir URL
+        const params = new URLSearchParams({
+            id: finca.id,
+            finca: encodeURIComponent(finca.nombre),
+            usuario: sesion.usuario,
+            origenIntegracion: 'true'
+        });
+        
+        // 4. Abrir historial
+        window.location.href = `historial.html?${params.toString()}`;
+        
+    } catch (error) {
+        console.error('Error al abrir historial:', error);
+        showAlert('Error al abrir historial: ' + error.message, 'error');
+    }
+}
+
+// Hacer funciones globales
+window.abrirRecogidaFrutas = abrirRecogidaFrutas;
+window.abrirHistorialFrutas = abrirHistorialFrutas;
+
+// 🔥 OPCIONAL: Función para cambiar de finca
+window.cambiarFinca = function() {
+    localStorage.removeItem('fincaActual');
+    showAlert('Finca deseleccionada. Se solicitará en la próxima recogida.', 'success');
+};
+</script>
 
 
 </body>
