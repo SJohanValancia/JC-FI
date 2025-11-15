@@ -26,7 +26,7 @@ router.post('/register', async (req, res) => {
       });
     }
     
-    // Crear nuevo usuario
+    // Crear nuevo usuario en programa principal
     const nuevoUsuario = new User({
       nombre: nombre.trim(),
       usuario: usuario.toLowerCase().trim(),
@@ -48,6 +48,58 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' }
     );
     
+    // 🔥 SINCRONIZACIÓN AUTOMÁTICA CON PROGRAMA DE FRUTAS
+    try {
+      console.log('🔄 Iniciando sincronización con programa de frutas...');
+      
+      // 1️⃣ Crear usuario en programa de frutas (SIEMPRE COMO ADMIN - TIPO 1)
+      const responseFrutasUser = await fetch('https://jc-frutas.onrender.com/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: nuevoUsuario.usuario,
+          password: password, // Contraseña sin encriptar
+          tipo: 1, // 🔥 SIEMPRE TIPO 1 (ADMIN)
+          alias: nuevoUsuario.usuario, // 🔥 USAR USUARIO COMO ALIAS
+          aliasAdmin: nuevoUsuario.usuario // 🔥 ALIASADMIN = USUARIO
+        })
+      });
+
+      if (responseFrutasUser.ok) {
+        const dataFrutasUser = await responseFrutasUser.json();
+        console.log('✅ Usuario creado en programa de frutas como ADMIN (tipo 1)');
+
+        // 2️⃣ Crear finca si se proporcionó
+        if (finca && finca.trim() !== '') {
+          const responseFinca = await fetch('https://jc-frutas.onrender.com/fincas/agregar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nombre: finca.trim(),
+              propietario: nuevoUsuario.nombre,
+              usuario: nuevoUsuario.usuario,
+              adminAlias: nuevoUsuario.usuario // 🔥 USAR USUARIO COMO ADMINALIAS
+            })
+          });
+
+          if (responseFinca.ok) {
+            const dataFinca = await responseFinca.json();
+            console.log('✅ Finca creada en programa de frutas:', dataFinca);
+          } else {
+            const errorFinca = await responseFinca.text();
+            console.warn('⚠️ Error al crear finca:', errorFinca);
+          }
+        }
+      } else {
+        const errorUsuario = await responseFrutasUser.text();
+        console.warn('⚠️ Error al crear usuario en frutas:', errorUsuario);
+      }
+    } catch (errorSync) {
+      console.error('❌ Error de sincronización:', errorSync.message);
+      // NO FALLAR el registro principal
+    }
+    
+    // Respuesta exitosa del registro principal
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
@@ -64,7 +116,6 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Error en registro:', error);
     
-    // Manejar errores de validación de Mongoose
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ 
@@ -73,7 +124,6 @@ router.post('/register', async (req, res) => {
       });
     }
     
-    // Manejar error de duplicado
     if (error.code === 11000) {
       return res.status(400).json({ 
         success: false, 
