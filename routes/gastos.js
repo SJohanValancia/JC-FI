@@ -187,6 +187,7 @@ router.put('/:id', verificarToken, async (req, res) => {
 });
 
 // Eliminar un gasto
+// Eliminar un gasto
 router.delete('/:id', verificarToken, async (req, res) => {
   try {
     const gasto = await Gasto.findById(req.params.id);
@@ -205,11 +206,22 @@ router.delete('/:id', verificarToken, async (req, res) => {
       });
     }
     
+    // 🔥 NUEVO: Devolver productos al inventario ANTES de eliminar
+    if (gasto.productosInventario && gasto.productosInventario.length > 0) {
+      for (let prod of gasto.productosInventario) {
+        await Inventario.findByIdAndUpdate(
+          prod.inventarioId,
+          { $inc: { stock: prod.cantidadUsada } } // Sumar de vuelta al stock
+        );
+      }
+    }
+    
     await Gasto.findByIdAndDelete(req.params.id);
     
     res.json({
       success: true,
-      message: 'Gasto eliminado exitosamente'
+      message: 'Gasto eliminado exitosamente',
+      productosDevueltos: gasto.productosInventario.length // Info adicional
     });
   } catch (error) {
     console.error('Error al eliminar gasto:', error);
