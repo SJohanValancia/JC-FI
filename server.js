@@ -55,10 +55,17 @@ mongoose.connection.on('disconnected', () => {
   console.log('⚠️ Mongoose desconectado');
 });
 
+// 🔥 IMPORTAR RUTAS (CORREGIDO)
+const authRoutes = require('./routes/auth');
+const gastosRoutes = require('./routes/gastos');
+const inventarioRoutes = require('./routes/inventario');
+const liquidacionRoutes = require('./routes/liquidacion'); // 🔥 AGREGADO
+
 // Rutas
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/gastos', require('./routes/gastos'));
-app.use('/api/inventario', require('./routes/inventario'));
+app.use('/api/auth', authRoutes);
+app.use('/api/gastos', gastosRoutes);
+app.use('/api/inventario', inventarioRoutes);
+app.use('/api/liquidacion', liquidacionRoutes); // 🔥 CORREGIDO
 
 // Ruta de prueba
 app.get('/', (req, res) => {

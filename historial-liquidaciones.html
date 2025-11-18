@@ -1,0 +1,561 @@
+: 24px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .resumen-item.final {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .resumen-item.final .resumen-label,
+        .resumen-item.final .resumen-valor {
+            color: white;
+        }
+
+        .liquidacion-detalles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .detalle-seccion {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .detalle-titulo {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detalle-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detalle-item:last-child {
+            border-bottom: none;
+        }
+
+        .detalle-desc {
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .detalle-valor {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .btn-ver-detalle {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .btn-ver-detalle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 124, 44, 0.4);
+        }
+
+        .volver-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .volver-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--bg-white);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 20px;
+            color: var(--text-light);
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--bg-white);
+            border-radius: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .filtros {
+            background: var(--bg-white);
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .filtros-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 124, 44, 0.1);
+        }
+
+        .btn-filtrar {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-filtrar:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .notas-seccion {
+            background: rgba(139, 195, 74, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .notas-titulo {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+        }
+
+        .notas-texto {
+            font-size: 14px;
+            color: var(--text-dark);
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .liquidacion-resumen {
+                grid-template-columns: 1fr;
+            }
+
+            .liquidacion-detalles {
+                grid-template-columns: 1fr;
+            }
+
+            .volver-btn {
+                position: static;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .filtros-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
+
+    <div class="container">
+        <div class="header">
+            <h1>📋 Historial de Liquidaciones</h1>
+            <p>Resumen completo de todas tus liquidaciones diarias</p>
+        </div>
+
+        <!-- Estadísticas Generales -->
+        <div class="stats-grid" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="totalLiquidaciones">0</div>
+                <div class="stat-label">Total Liquidaciones</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value" id="totalIngresos">$0</div>
+                <div class="stat-label">Total Ingresos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📉</div>
+                <div class="stat-value" id="totalEgresos">$0</div>
+                <div class="stat-label">Total Egresos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value" id="promedioIngreso">$0</div>
+                <div class="stat-label">Promedio Ingresos</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filtros">
+            <div class="filtros-grid">
+                <input type="date" id="fechaInicio" class="form-input" placeholder="Fecha Inicio">
+                <input type="date" id="fechaFin" class="form-input" placeholder="Fecha Fin">
+                <button class="btn-filtrar" onclick="aplicarFiltros()">🔍 Filtrar</button>
+                <button class="btn-filtrar" style="background: #6c757d;" onclick="limpiarFiltros()">🔄 Limpiar</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading active" id="loading">
+            <div class="spinner"></div>
+            <p style="color: var(--text-light); font-size: 16px;">Cargando historial...</p>
+        </div>
+
+        <!-- Lista de Liquidaciones -->
+        <div id="liquidacionesContainer"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://jc-fi.onrender.com/api';
+        let liquidaciones = [];
+
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            cargarHistorial();
+            cargarEstadisticas();
+        });
+
+        async function cargarHistorial() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('liquidacionesContainer');
+            
+            loading.classList.add('active');
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/liquidacion/historial`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar historial');
+                }
+
+                liquidaciones = data.liquidaciones || [];
+
+                if (liquidaciones.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p class="empty-text">No hay liquidaciones registradas</p>
+                            <button class="btn-ver-detalle" onclick="window.location.href='liquidacion-diaria.html'">
+                                ➕ Crear Primera Liquidación
+                            </button>
+                        </div>
+                    `;
+                    loading.classList.remove('active');
+                    return;
+                }
+
+                mostrarLiquidaciones(liquidaciones);
+
+            } catch (error) {
+                console.error('Error al cargar historial:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <p class="empty-text">Error al cargar historial</p>
+                        <p style="color: var(--danger); margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function mostrarLiquidaciones(lista) {
+            const container = document.getElementById('liquidacionesContainer');
+            
+            container.innerHTML = lista.map(liquidacion => {
+                const fecha = new Date(liquidacion.fecha);
+                const fechaFormateada = fecha.toLocaleDateString('es-CO', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                let recogidasList = '';
+                if (liquidacion.recogidasLiquidadas && liquidacion.recogidasLiquidadas.length > 0) {
+                    recogidasList = liquidacion.recogidasLiquidadas.map(r => `
+                        <div class="detalle-item">
+                            <span class="detalle-desc">🏡 ${r.finca}</span>
+                            <span class="detalle-valor">$${r.valor.toLocaleString('es-CO')}</span>
+                        </div>
+                    `).join('');
+                }
+
+                let gastosList = '';
+                if (liquidacion.gastosLiquidados && liquidacion.gastosLiquidados.length > 0) {
+                    gastosList = liquidacion.gastosLiquidados.map(g => `
+                        <div class="detalle-item">
+                            <span class="detalle-desc">💸 ${g.descripcion}</span>
+                            <span class="detalle-valor">$${g.valor.toLocaleString('es-CO')}</span>
+                        </div>
+                    `).join('');
+                }
+
+                let inventarioList = '';
+                if (liquidacion.inventarioUsado && liquidacion.inventarioUsado.length > 0) {
+                    inventarioList = liquidacion.inventarioUsado.map(inv => `
+                        <div class="detalle-item">
+                            <span class="detalle-desc">📦 ${inv.productoNombre} (${inv.cantidad} uds)</span>
+                            <span class="detalle-valor">$${inv.valorTotal.toLocaleString('es-CO')}</span>
+                        </div>
+                    `).join('');
+                }
+
+                let ingresosAdicionalesList = '';
+                if (liquidacion.ingresosAdicionales && liquidacion.ingresosAdicionales.length > 0) {
+                    ingresosAdicionalesList = liquidacion.ingresosAdicionales.map(ing => `
+                        <div class="detalle-item">
+                            <span class="detalle-desc">💵 ${ing.descripcion}</span>
+                            <span class="detalle-valor">$${ing.valor.toLocaleString('es-CO')}</span>
+                        </div>
+                    `).join('');
+                }
+
+                let notasHTML = '';
+                if (liquidacion.notas) {
+                    notasHTML = `
+                        <div class="notas-seccion">
+                            <div class="notas-titulo">📝 Notas</div>
+                            <div class="notas-texto">${liquidacion.notas}</div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="liquidacion-card">
+                        <div class="liquidacion-header">
+                            <div class="liquidacion-fecha">📅 ${fechaFormateada}</div>
+                            <div class="liquidacion-estado">✅ ${liquidacion.estado}</div>
+                        </div>
+
+                        <div class="liquidacion-resumen">
+                            <div class="resumen-item">
+                                <div class="resumen-label">💰 Caja Inicial</div>
+                                <div class="resumen-valor">$${liquidacion.cajaInicial.toLocaleString('es-CO')}</div>
+                            </div>
+                            <div class="resumen-item">
+                                <div class="resumen-label">📈 Total Ingresos</div>
+                                <div class="resumen-valor">$${liquidacion.totalIngresos.toLocaleString('es-CO')}</div>
+                            </div>
+                            <div class="resumen-item">
+                                <div class="resumen-label">📉 Total Egresos</div>
+                                <div class="resumen-valor">$${liquidacion.totalEgresos.toLocaleString('es-CO')}</div>
+                            </div>
+                            <div class="resumen-item final">
+                                <div class="resumen-label">💼 Caja Final</div>
+                                <div class="resumen-valor">$${liquidacion.cajaFinal.toLocaleString('es-CO')}</div>
+                            </div>
+                        </div>
+
+                        <div class="liquidacion-detalles">
+                            ${recogidasList ? `
+                                <div class="detalle-seccion">
+                                    <div class="detalle-titulo">📊 Recogidas Pagadas</div>
+                                    ${recogidasList}
+                                </div>
+                            ` : ''}
+                            
+                            ${ingresosAdicionalesList ? `
+                                <div class="detalle-seccion">
+                                    <div class="detalle-titulo">💵 Ingresos Adicionales</div>
+                                    ${ingresosAdicionalesList}
+                                </div>
+                            ` : ''}
+                            
+                            ${gastosList ? `
+                                <div class="detalle-seccion">
+                                    <div class="detalle-titulo">💸 Gastos</div>
+                                    ${gastosList}
+                                </div>
+                            ` : ''}
+                            
+                            ${inventarioList ? `
+                                <div class="detalle-seccion">
+                                    <div class="detalle-titulo">📦 Inventario Usado</div>
+                                    ${inventarioList}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        ${notasHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function cargarEstadisticas() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/liquidacion/stats/resumen`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('totalLiquidaciones').textContent = stats.totalLiquidaciones;
+                    document.getElementById('totalIngresos').textContent = 
+                        '$' + stats.totalIngresos.toLocaleString('es-CO');
+                    document.getElementById('totalEgresos').textContent = 
+                        '$' + stats.totalEgresos.toLocaleString('es-CO');
+                    document.getElementById('promedioIngreso').textContent = 
+                        '$' + Math.round(stats.promedioIngreso).toLocaleString('es-CO');
+                }
+            } catch (error) {
+                console.error('Error al cargar estadísticas:', error);
+            }
+        }
+
+        async function aplicarFiltros() {
+            const fechaInicio = document.getElementById('fechaInicio').value;
+            const fechaFin = document.getElementById('fechaFin').value;
+
+            if (!fechaInicio || !fechaFin) {
+                alert('Por favor selecciona ambas fechas');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            loading.classList.add('active');
+
+            try {
+                const token = localStorage.getItem('token');
+                const params = new URLSearchParams({
+                    fechaInicio: fechaInicio,
+                    fechaFin: fechaFin
+                });
+
+                const response = await fetch(`${API_URL}/liquidacion/historial?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    liquidaciones = data.liquidaciones;
+                    mostrarLiquidaciones(liquidaciones);
+                }
+            } catch (error) {
+                console.error('Error al filtrar:', error);
+                alert('Error al aplicar filtros');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('fechaInicio').value = '';
+            document.getElementById('fechaFin').value = '';
+            cargarHistorial();
+        }
+    </script>
+</body>
+</html>

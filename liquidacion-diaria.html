@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidación Diaria - JC-FI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4a7c2c;
+            --primary-dark: #2d5016;
+            --primary-light: #6b9d4a;
+            --secondary: #8bc34a;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --bg-light: #f5f7f5;
+            --bg-white: #ffffff;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 30px var(--shadow-lg);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .section {
+            background: var(--bg-white);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px var(--shadow);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-icon {
+            font-size: 28px;
+        }
+
+        /* Recogidas Pendientes */
+        .recogida-item {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--warning);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .recogida-item.pagada {
+            border-left-color: var(--success);
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+            animation: marcarPagada 0.6s ease;
+        }
+
+        @keyframes marcarPagada {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 8px 25px var(--shadow-lg); }
+            100% { transform: scale(1); }
+        }
+
+        .recogida-info {
+            flex: 1;
+        }
+
+        .recogida-finca {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 5px;
+        }
+
+        .recogida-detalles {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .recogida-valor {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0 20px;
+        }
+
+        .btn-pagar {
+            background: linear-gradient(135deg, var(--success), #20c997);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-pagar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-pagar:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-pagar.pagado {
+            background: var(--success);
+        }
+
+        /* Ingresos Adicionales */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: var(--bg-light);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(74, 124, 44, 0.1);
+        }
+
+        .ingreso-adicional-item {
+            background: rgba(139, 195, 74, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid var(--secondary);
+        }
+
+        .ingreso-adicional-info {
+            flex: 1;
+        }
+
+        .ingreso-adicional-desc {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 3px;
+        }
+
+        .ingreso-adicional-valor {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .btn-eliminar-ingreso {
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-eliminar-ingreso:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Egresos */
+        .egreso-item {
+            background: rgba(220, 53, 69, 0.05);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--danger);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .egreso-desc {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .egreso-valor {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--danger);
+        }
+
+        /* Resumen Total */
+        .resumen-total {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px var(--shadow-lg);
+        }
+
+        .resumen-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .resumen-item:last-child {
+            border-bottom: none;
+            padding-top: 20px;
+            margin-top: 10px;
+            border-top: 3px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .resumen-label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .resumen-valor {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .resumen-item.total {
+            font-size: 28px;
+        }
+
+        .resumen-item.total .resumen-valor {
+            font-size: 36px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 124, 44, 0.3);
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 124, 44, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border: 2px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            border-color: var(--primary);
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            animation: slideDown 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .volver-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px15px rgba(0,0,0,0.2);
+        }
+
+        .volver-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .caja-inicial-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        .caja-inicial-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .caja-inicial-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .recogida-item {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .recogida-valor {
+                text-align: center;
+            }
+
+            .volver-btn {
+                position: static;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
+
+    <div class="container">
+        <div class="header">
+            <h1>💰 Liquidación Diaria</h1>
+            <p id="fechaActual">Liquidación del día</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- SECCIÓN: INGRESOS POR RECOGIDAS -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="section-icon">📈</span>
+                Ingresos por Recogidas
+            </h2>
+            
+            <div id="recogidasContainer">
+                <div class="loading active">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px; color: var(--text-light);">Cargando recogidas pendientes...</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 18px; font-weight: 600;">Total Recogidas Confirmadas:</span>
+                    <span id="totalRecogidasConfirmadas" style="font-size: 28px; font-weight: 800; color: var(--success);">$0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: INGRESOS ADICIONALES -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="section-icon">💵</span>
+                Ingresos Adicionales
+            </h2>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" id="ingresoAdicionalDesc" class="form-input" placeholder="Ej: Venta de productos">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Valor ($)</label>
+                    <input type="number" id="ingresoAdicionalValor" class="form-input" placeholder="Ej: 50000" min="0">
+                </div>
+            </div>
+
+            <button class="btn-secondary" onclick="agregarIngresoAdicional()" style="width: 100%;">
+                ➕ Agregar Ingreso Adicional
+            </button>
+
+            <div id="ingresosAdicionalesContainer" style="margin-top: 20px;"></div>
+
+            <div style="margin-top: 20px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 18px; font-weight: 600;">Total Ingresos Adicionales:</span>
+                    <span id="totalIngresosAdicionales" style="font-size: 28px; font-weight: 800; color: var(--secondary);">$0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: EGRESOS -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="section-icon">📉</span>
+                Egresos del Día
+            </h2>
+
+            <div id="egresosContainer">
+                <div class="loading active">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px; color: var(--text-light);">Cargando gastos pendientes...</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 18px; font-weight: 600;">Total Egresos:</span>
+                    <span id="totalEgresos" style="font-size: 28px; font-weight: 800; color: var(--danger);">$0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: RESUMEN TOTAL -->
+        <div class="section">
+            <div class="resumen-total">
+                <h2 style="margin-bottom: 30px; font-size: 28px;">📊 Resumen Total</h2>
+
+                <div class="form-group" style="margin-bottom: 30px;">
+                    <label style="color: rgba(255,255,255,0.9); margin-bottom: 10px; display: block;">Caja Inicial del Día ($)</label>
+                    <input type="number" id="cajaInicial" class="caja-inicial-input" placeholder="Ingresa el valor inicial" min="0" value="0" onchange="calcularResumen()">
+                </div>
+
+                <div class="resumen-item">
+                    <span class="resumen-label">💰 Caja Inicial:</span>
+                    <span class="resumen-valor" id="resumenCajaInicial">$0</span>
+                </div>
+
+                <div class="resumen-item">
+                    <span class="resumen-label">📈 Total Ingresos:</span>
+                    <span class="resumen-valor" id="resumenTotalIngresos">$0</span>
+                </div>
+
+                <div class="resumen-item">
+                    <span class="resumen-label">📉 Total Egresos:</span>
+                    <span class="resumen-valor" id="resumenTotalEgresos">$0</span>
+                </div>
+
+                <div class="resumen-item total">
+                    <span class="resumen-label">💼 Caja Final:</span>
+                    <span class="resumen-valor" id="resumenCajaFinal">$0</span>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px;">
+                    <label style="color: rgba(255,255,255,0.9); margin-bottom: 10px; display: block;">Notas (opcional)</label>
+                    <textarea id="notasLiquidacion" class="form-input" rows="3" placeholder="Agrega observaciones sobre esta liquidación..." style="resize: vertical;"></textarea>
+                </div>
+
+                <button class="btn-primary" onclick="procesarLiquidacion()" id="btnProcesar">
+                    ✅ Procesar Liquidación
+                </button>
+            </div>
+        </div>
+
+        <!-- Botón para ver historial -->
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn-secondary" onclick="window.location.href='historial-liquidaciones.html'" style="padding: 16px 32px;">
+                📋 Ver Historial de Liquidaciones
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://jc-fi.onrender.com/api';
+        
+        let recogidasPendientes = [];
+        let recogidasPagadas = new Set();
+        let ingresosAdicionales = [];
+        let gastosPendientes = [];
+        let userData = null;
+
+        // Verificar autenticación
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            const usuario = localStorage.getItem('usuario');
+
+            if (!token || !usuario) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            userData = JSON.parse(usuario);
+            inicializarLiquidacion();
+        });
+
+        async function inicializarLiquidacion() {
+            mostrarFechaActual();
+            await cargarRecogidasPendientes();
+            await cargarGastosPendientes();
+            calcularResumen();
+        }
+
+        function mostrarFechaActual() {
+            const fecha = new Date();
+            const opciones = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('fechaActual').textContent = 
+                `Liquidación del ${fecha.toLocaleDateString('es-CO', opciones)}`;
+        }
+
+        // 🔥 CARGAR RECOGIDAS PENDIENTES
+        async function cargarRecogidasPendientes() {
+            const container = document.getElementById('recogidasContainer');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/liquidacion/recogidas-pendientes`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar recogidas');
+                }
+
+                recogidasPendientes = data.recogidas || [];
+
+                if (recogidasPendientes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No hay recogidas pendientes de liquidar</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = recogidasPendientes.map((recogida, index) => {
+                    const fechaFormateada = new Date(recogida.fecha).toLocaleDateString('es-CO');
+                    
+                    return `
+                        <div class="recogida-item" id="recogida-${recogida._id}">
+                            <div class="recogida-info">
+                                <div class="recogida-finca">🏡 ${recogida.finca}</div>
+                                <div class="recogida-detalles">
+                                    📅 ${fechaFormateada} • 
+                                    ⚖️ ${recogida.totalKilos} kg • 
+                                    🍎 ${recogida.fruta}
+                                </div>
+                            </div>
+                            <div class="recogida-valor">$${recogida.valorPagar.toLocaleString('es-CO')}</div>
+                            <button class="btn-pagar" onclick="marcarComoPagada('${recogida._id}', ${recogida.valorPagar})" id="btn-${recogida._id}">
+                                ❓ ¿Se pagó?
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error al cargar recogidas:', error);
+                showAlert('Error al cargar recogidas: ' + error.message, 'error');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <p>Error al cargar recogidas pendientes</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 🔥 MARCAR RECOGIDA COMO PAGADA
+        function marcarComoPagada(id, valor) {
+            const recogidaElement = document.getElementById(`recogida-${id}`);
+            const boton = document.getElementById(`btn-${id}`);
+            
+            if (recogidasPagadas.has(id)) {
+                // Desmarcar
+                recogidasPagadas.delete(id);
+                recogidaElement.classList.remove('pagada');
+                boton.textContent = '❓ ¿Se pagó?';
+                boton.classList.remove('pagado');
+            } else {
+                // Marcar como pagada
+                recogidasPagadas.add(id);
+                recogidaElement.classList.add('pagada');
+                boton.textContent = '✅ Pagada';
+                boton.classList.add('pagado');
+                
+                showAlert(`Recogida marcada como pagada: $${valor.toLocaleString('es-CO')}`, 'success');
+            }
+            
+            calcularTotalRecogidasConfirmadas();
+            calcularResumen();
+        }
+
+        function calcularTotalRecogidasConfirmadas() {
+            const total = recogidasPendientes
+                .filter(r => recogidasPagadas.has(r._id))
+                .reduce((sum, r) => sum + r.valorPagar, 0);
+            
+            document.getElementById('totalRecogidasConfirmadas').textContent = 
+                '$' + total.toLocaleString('es-CO');
+        }
+
+        // 🔥 INGRESOS ADICIONALES
+        function agregarIngresoAdicional() {
+            const desc = document.getElementById('ingresoAdicionalDesc').value.trim();
+            const valor = parseFloat(document.getElementById('ingresoAdicionalValor').value);
+
+            if (!desc || !valor || valor <= 0) {
+                showAlert('Por favor completa la descripción y el valor', 'error');
+                return;
+            }
+
+            const ingreso = {
+                id: Date.now(),
+                descripcion: desc,
+                valor: valor
+            };
+
+            ingresosAdicionales.push(ingreso);
+            
+            document.getElementById('ingresoAdicionalDesc').value = '';
+            document.getElementById('ingresoAdicionalValor').value = '';
+            
+            mostrarIngresosAdicionales();
+            calcularResumen();
+            
+            showAlert('Ingreso adicional agregado', 'success');
+        }
+
+        function mostrarIngresosAdicionales() {
+            const container = document.getElementById('ingresosAdicionalesContainer');
+            
+            if (ingresosAdicionales.length === 0) {
+                container.innerHTML = '';
+                document.getElementById('totalIngresosAdicionales').textContent = '$0';
+                return;
+            }
+
+            container.innerHTML = ingresosAdicionales.map(ingreso => `
+                <div class="ingreso-adicional-item">
+                    <div class="ingreso-adicional-info">
+                        <div class="ingreso-adicional-desc">${ingreso.descripcion}</div>
+                        <div class="ingreso-adicional-valor">$${ingreso.valor.toLocaleString('es-CO')}</div>
+                    </div>
+                    <button class="btn-eliminar-ingreso" onclick="eliminarIngresoAdicional(${ingreso.id})">
+                        ✕
+                    </button>
+                </div>
+            `).join('');
+
+            const total = ingresosAdicionales.reduce((sum, ing) => sum + ing.valor, 0);
+            document.getElementById('totalIngresosAdicionales').textContent = 
+                '$' + total.toLocaleString('es-CO');
+        }
+
+        function eliminarIngresoAdicional(id) {
+            ingresosAdicionales = ingresosAdicionales.filter(ing => ing.id !== id);
+            mostrarIngresosAdicionales();
+            calcularResumen();
+            showAlert('Ingreso eliminado', 'success');
+        }
+
+        // 🔥 CARGAR GASTOS PENDIENTES
+        async function cargarGastosPendientes() {
+            const container = document.getElementById('egresosContainer');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/liquidacion/gastos-pendientes`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar gastos');
+                }
+
+                gastosPendientes = data.gastos || [];
+
+                if (gastosPendientes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No hay gastos pendientes de liquidar</p>
+                        </div>
+                    `;
+                    calcularTotalEgresos();
+                    return;
+                }
+
+                let html = '';
+
+                gastosPendientes.forEach(gasto => {
+                    const fechaFormateada = new Date(gasto.fechaGasto || gasto.fechaCreacion)
+                        .toLocaleDateString('es-CO');
+                    
+                    html += `
+                        <div class="egreso-item">
+                            <div>
+                                <div class="egreso-desc">💸 ${gasto.descripcion}</div>
+                                <div style="font-size: 12px; color: var(--text-light); margin-top: 3px;">
+                                    📅 ${fechaFormateada}
+                                </div>
+                            </div>
+                            <div class="egreso-valor">$${gasto.valor.toLocaleString('es-CO')}</div>
+                        </div>
+                    `;
+
+                    // Mostrar inventario usado
+                    if (gasto.productosInventario && gasto.productosInventario.length > 0) {
+                        gasto.productosInventario.forEach(prod => {
+                            const valorProd = prod.cantidadUsada * (prod.precio || 0);
+                            html += `
+                                <div class="egreso-item" style="margin-left: 20px; border-left-color: var(--warning);">
+                                    <div>
+                                        <div class="egreso-desc">📦 ${prod.nombre}</div>
+                                        <div style="font-size: 12px; color: var(--text-light);">
+                                            Inventario: ${prod.cantidadUsada} unidades
+                                        </div>
+                                    </div>
+                                    <div class="egreso-valor">$${valorProd.toLocaleString('es-CO')}</div>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+
+                container.innerHTML = html;
+                calcularTotalEgresos();
+
+            } catch (error) {
+                console.error('Error al cargar gastos:', error);
+                showAlert('Error al cargar gastos: ' + error.message, 'error');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <p>Error al cargar gastos pendientes</p>
+                    </div>
+                `;
+            }
+        }
+
+        function calcularTotalEgresos() {
+            const total = gastosPendientes.reduce((sum, gasto) => {
+                return sum + gasto.valorTotal;
+            }, 0);
+            
+            document.getElementById('totalEgresos').textContent = 
+                '$' + total.toLocaleString('es-CO');
+        }
+
+        // 🔥 CALCULAR RESUMEN TOTAL
+        function calcularResumen() {
+            const cajaInicial = parseFloat(document.getElementById('cajaInicial').value) || 0;
+            
+            const totalRecogidasPagadas = recogidasPendientes
+                .filter(r => recogidasPagadas.has(r._id))
+                .reduce((sum, r) => sum + r.valorPagar, 0);
+            
+            const totalIngresosAd = ingresosAdicionales.reduce((sum, ing) => sum + ing.valor, 0);
+            
+            const totalIngresos = totalRecogidasPagadas + totalIngresosAd;
+            
+            const totalEgresos = gastosPendientes.reduce((sum, gasto) => sum + gasto.valorTotal, 0);
+            
+            const cajaFinal = cajaInicial + totalIngresos - totalEgresos;
+
+            // Actualizar UI
+            document.getElementById('resumenCajaInicial').textContent = 
+                '$' + cajaInicial.toLocaleString('es-CO');
+            document.getElementById('resumenTotalIngresos').textContent = 
+                '$' + totalIngresos.toLocaleString('es-CO');
+            document.getElementById('resumenTotalEgresos').textContent = 
+                '$' + totalEgresos.toLocaleString('es-CO');
+            document.getElementById('resumenCajaFinal').textContent = 
+                '$' + cajaFinal.toLocaleString('es-CO');
+        }
+
+        // 🔥 PROCESAR LIQUIDACIÓN
+        async function procesarLiquidacion() {
+            if (recogidasPagadas.size === 0 && ingresosAdicionales.length === 0 && gastosPendientes.length === 0) {
+                showAlert('No hay datos para liquidar', 'error');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de procesar esta liquidación? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            const btnProcesar = document.getElementById('btnProcesar');
+            btnProcesar.disabled = true;
+            btnProcesar.textContent = 'Procesando...';
+
+            try {
+                const token = localStorage.getItem('token');
+                const cajaInicial = parseFloat(document.getElementById('cajaInicial').value) || 0;
+                const notas = document.getElementById('notasLiquidacion').value.trim();
+
+                const datosLiquidacion = {
+                    cajaInicial: cajaInicial,
+                    recogidasPagadas: Array.from(recogidasPagadas),
+                    ingresosAdicionales: ingresosAdicionales.map(ing => ({
+                        descripcion: ing.descripcion,
+                        valor: ing.valor
+                    })),
+                    gastosIds: gastosPendientes.map(g => g._id),
+                    notas: notas
+                };
+
+                const response = await fetch(`${API_URL}/liquidacion/procesar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(datosLiquidacion)
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al procesar liquidación');
+                }
+
+                showAlert('✅ Liquidación procesada exitosamente', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'historial-liquidaciones.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error al procesar liquidación:', error);
+                showAlert('Error al procesar liquidación: ' + error.message, 'error');
+                btnProcesar.disabled = false;
+                btnProcesar.textContent = '✅ Procesar Liquidación';
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <span>${type === 'success' ? '✅' : '⚠️'}</span>
+                <span>${message}</span>
+            `;
+            container.innerHTML = '';
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

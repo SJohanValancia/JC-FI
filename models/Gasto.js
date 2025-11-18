@@ -44,6 +44,21 @@ const gastoSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+
+  // Agregar después de la línea de fechaCreacion:
+reciboDia: { 
+  type: Boolean, 
+  default: false 
+},
+fechaLiquidacion: {
+  type: Date,
+  default: null
+},
+liquidacionId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Liquidacion',
+  default: null
+},
   actualizado: {
     type: Date,
     default: Date.now
