@@ -53,9 +53,10 @@ router.get('/:id', verificarToken, async (req, res) => {
 });
 
 // Crear gasto (único) con descuento de inventario
+// Crear gasto (único) con descuento de inventario
 router.post('/', verificarToken, async (req, res) => {
   try {
-    const { descripcion, valor, productosInventario } = req.body;
+    const { fechaGasto, descripcion, valor, productosInventario } = req.body;
     
     if (!descripcion || !valor || valor <= 0) {
       return res.status(400).json({
@@ -84,8 +85,9 @@ router.post('/', verificarToken, async (req, res) => {
       }
     }
     
-    // Crear el gasto
+    // Crear el gasto con fecha personalizada o fecha actual
     const nuevoGasto = await Gasto.create({
+      fechaGasto: fechaGasto ? new Date(fechaGasto) : new Date(),
       descripcion,
       valor,
       productosInventario: productosInventario || [],

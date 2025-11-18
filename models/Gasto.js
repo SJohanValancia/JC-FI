@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const gastoSchema = new mongoose.Schema({
+  fechaGasto: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
   descripcion: {
     type: String,
     required: [true, 'La descripción es obligatoria'],
@@ -11,7 +16,6 @@ const gastoSchema = new mongoose.Schema({
     required: [true, 'El valor es obligatorio'],
     min: [0, 'El valor debe ser positivo']
   },
-  // Cambiamos de String simple a Array de objetos
   productosInventario: [{
     inventarioId: {
       type: mongoose.Schema.Types.ObjectId,

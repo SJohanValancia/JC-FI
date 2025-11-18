@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Gastos - Sistema de Fincas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4a7c2c;
+            --primary-dark: #2d5016;
+            --primary-light: #6b9d4a;
+            --secondary: #8bc34a;
+            --bg-light: #f5f7f5;
+            --bg-white: #ffffff;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 280px;
+            background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+            padding: 30px 20px;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 4px 0 20px var(--shadow-lg);
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-logo {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .sidebar-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 20px;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding: 15px 20px;
+            background: rgba(220, 38, 38, 0.2);
+            border: 2px solid rgba(220, 38, 38, 0.4);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 38, 38, 0.3);
+            transform: scale(1.02);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-white);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+
+        .user-badge {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(74, 124, 44, 0.3);
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 30px;
+            border-radius: 16px;
+            color: white;
+            box-shadow: 0 4px 20px var(--shadow);
+            animation: scaleIn 0.5s ease;
+        }
+
+        .stat-card.secondary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-card.tertiary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stat-icon {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 15px;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        /* Filters Section */
+        .filters-card {
+            background: var(--bg-white);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .filters-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: var(--bg-light);
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(74, 124, 44, 0.1);
+        }
+
+        .btn-filter {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 124, 44, 0.3);
+        }
+
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 124, 44, 0.4);
+        }
+
+        .btn-reset {
+            background: #f3f4f6;
+            color: var(--text-dark);
+            border: 2px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-reset:hover {
+            background: #e5e7eb;
+            border-color: var(--text-light);
+        }
+
+        /* Card Container */
+        .card {
+            background: var(--bg-white);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Expense Cards Grid */
+        .expenses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .expense-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 4px 15px var(--shadow);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .expense-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-lg);
+        }
+
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .expense-description {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+        }
+
+        .expense-amount {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 15px 0;
+        }
+
+        .expense-date {
+            color: var(--text-light);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+
+        .expense-user {
+            color: var(--text-light);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .productos-usados {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(139, 195, 74, 0.1);
+            border-radius: 12px;
+            border-left: 3px solid var(--secondary);
+        }
+
+        .productos-usados-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .producto-usado-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(139, 195, 74, 0.2);
+        }
+
+        .producto-usado-item:last-child {
+            border-bottom: none;
+        }
+
+        .producto-usado-nombre {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .producto-usado-cantidad {
+            background: var(--secondary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Alert */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            animation: slideDown 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .expenses-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">🌾</div>
+            <div class="sidebar-title">JC-Fi</div>
+        </div>
+
+        <nav>
+            <a href="dashboard.html" class="menu-item">
+                <span class="menu-icon">💰</span>
+                <span>Gastos</span>
+            </a>
+            <a href="inventario.html" class="menu-item">
+                <span class="menu-icon">📦</span>
+                <span>Inventario</span>
+            </a>
+            <a href="reportes-gastos.html" class="menu-item active">
+                <span class="menu-icon">📊</span>
+                <span>Reportes</span>
+            </a>
+            <div class="menu-item" data-section="usuarios">
+                <span class="menu-icon">👥</span>
+                <span>Usuarios</span>
+            </div>
+        </nav>
+
+        <button class="logout-btn" onclick="cerrarSesion()">
+            🚪 Cerrar Sesión
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1 class="page-title">📊 Reportes de Gastos</h1>
+                <div class="user-badge" id="userBadge">Usuario</div>
+            </div>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-value" id="totalGastos">0</div>
+                <div class="stat-label">Total Gastos Registrados</div>
+            </div>
+            <div class="stat-card secondary">
+                <div class="stat-icon">💵</div>
+                <div class="stat-value" id="totalDinero">$0</div>
+                <div class="stat-label">Valor Total Gastado</div>
+            </div>
+            <div class="stat-card tertiary">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value" id="promedioGasto">$0</div>
+                <div class="stat-label">Promedio por Gasto</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-card">
+            <h3 class="filters-title">
+                <span>🔍</span>
+                Filtros de Búsqueda
+            </h3>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Buscar Descripción</label>
+                    <input type="text" id="buscarDescripcion" class="filter-input" placeholder="Ej: fertilizante">
+                </div>
+                <div class="filter-group" style="display: flex; gap: 10px;">
+                    <button class="btn-filter" onclick="aplicarFiltros()">
+                        🔍 Filtrar
+                    </button>
+                    <button class="btn-reset" onclick="limpiarFiltros()">
+                        🔄 Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="color: var(--text-light); font-weight: 600;">Cargando reportes...</p>
+        </div>
+
+        <!-- Lista de Gastos -->
+        <div class="card">
+            <h2 class="card-title">
+                <span>📋</span>
+                Registro Completo de Gastos
+            </h2>
+            <div id="expensesList" class="expenses-grid">
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <p class="empty-text">No hay gastos registrados</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'https://jc-fi.onrender.com/api';
+        let userData = null;
+        let gastosOriginales = [];
+        let gastosFiltrados = [];
+
+        // Verificar autenticación
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            const usuario = localStorage.getItem('usuario');
+
+            if (!token || !usuario) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            userData = JSON.parse(usuario);
+            document.getElementById('userBadge').textContent = userData.nombre;
+
+            inicializarReportes();
+        });
+
+        async function inicializarReportes() {
+            await cargarGastos();
+            configurarFechasPorDefecto();
+        }
+
+        function configurarFechasPorDefecto() {
+            const hoy = new Date();
+            const hace30Dias = new Date();
+            hace30Dias.setDate(hoy.getDate() - 30);
+
+            document.getElementById('fechaFin').valueAsDate = hoy;
+            document.getElementById('fechaInicio').valueAsDate = hace30Dias;
+        }
+
+        async function cargarGastos() {
+            const loading = document.getElementById('loading');
+            loading.classList.add('active');
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/gastos`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    gastosOriginales = data.gastos;
+                    gastosFiltrados = [...gastosOriginales];
+                    mostrarGastos(gastosFiltrados);
+                    actualizarEstadisticas(gastosFiltrados);
+                } else {
+                    showAlert('Error al cargar gastos: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error de conexión al cargar gastos', 'error');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function mostrarGastos(gastos) {
+            const container = document.getElementById('expensesList');
+
+            if (gastos.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <p class="empty-text">No se encontraron gastos con estos filtros</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            gastos.forEach(gasto => {
+                const fechaGasto = new Date(gasto.fechaGasto || gasto.fechaCreacion);
+                const fechaCreacion = new Date(gasto.fechaCreacion);
+                
+                const card = document.createElement('div');
+                card.className = 'expense-card';
+
+                let productosHTML = '';
+                if (gasto.productosInventario && gasto.productosInventario.length > 0) {
+                    const productosList = gasto.productosInventario.map(p => `
+                        <div class="producto-usado-item">
+                            <span class="producto-usado-nombre">${p.nombre}</span>
+                            <span class="producto-usado-cantidad">${p.cantidadUsada} uds</span>
+                        </div>
+                    `).join('');
+
+                    productosHTML = `
+                        <div class="productos-usados">
+                            <div class="productos-usados-title">
+                                <span>📦</span>
+                                Productos del Inventario Utilizados:
+                            </div>
+                            ${productosList}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="expense-header">
+                        <div style="flex: 1;">
+                            <div class="expense-description">${gasto.descripcion}</div>
+                            <div class="expense-date">
+                                📅 Fecha del Gasto: ${fechaGasto.toLocaleDateString('es-CO', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
+                            </div>
+                            <div class="expense-date">
+                                🕐 Registrado: ${fechaCreacion.toLocaleDateString('es-CO', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                })} - ${fechaCreacion.toLocaleTimeString('es-CO', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="expense-amount">$${gasto.valor.toLocaleString('es-CO')}</div>
+                    ${productosHTML}
+                    <div class="expense-user">
+                        <span>👤</span>
+                        Registrado por: ${gasto.usuarioNombre}
+                    </div>
+                `;
+                fragment.appendChild(card);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(fragment);
+        }
+
+        function actualizarEstadisticas(gastos) {
+            const totalGastos = gastos.length;
+            const totalDinero = gastos.reduce((sum, g) => sum + g.valor, 0);
+            const promedio = totalGastos > 0 ? totalDinero / totalGastos : 0;
+
+            document.getElementById('totalGastos').textContent = totalGastos;
+            document.getElementById('totalDinero').textContent = '$' + totalDinero.toLocaleString('es-CO');
+            document.getElementById('promedioGasto').textContent = '$' + Math.round(promedio).toLocaleString('es-CO');
+        }
+
+        function aplicarFiltros() {
+            const fechaInicio = document.getElementById('fechaInicio').value;
+            const fechaFin = document.getElementById('fechaFin').value;
+            const buscarDesc = document.getElementById('buscarDescripcion').value.toLowerCase().trim();
+
+            let gastosFiltradosTemp = [...gastosOriginales];
+
+            // Filtrar por fechas
+            if (fechaInicio) {
+                const fechaInicioObj = new Date(fechaInicio);
+                fechaInicioObj.setHours(0, 0, 0, 0);
+                gastosFiltradosTemp = gastosFiltradosTemp.filter(g => {
+                    const fechaGasto = new Date(g.fechaGasto || g.fechaCreacion);
+                    fechaGasto.setHours(0, 0, 0, 0);
+                    return fechaGasto >= fechaInicioObj;
+                });
+            }
+
+            if (fechaFin) {
+                const fechaFinObj = new Date(fechaFin);
+                fechaFinObj.setHours(23, 59, 59, 999);
+                gastosFiltradosTemp = gastosFiltradosTemp.filter(g => {
+                    const fechaGasto = new Date(g.fechaGasto || g.fechaCreacion);
+                    return fechaGasto <= fechaFinObj;
+                });
+            }
+
+            // Filtrar por descripción
+            if (buscarDesc) {
+                gastosFiltradosTemp = gastosFiltradosTemp.filter(g =>
+                    g.descripcion.toLowerCase().includes(buscarDesc)
+                );
+            }
+
+            gastosFiltrados = gastosFiltradosTemp;
+            mostrarGastos(gastosFiltrados);
+            actualizarEstadisticas(gastosFiltrados);
+
+            showAlert(`✅ Filtros aplicados. ${gastosFiltrados.length} gasto(s) encontrado(s)`, 'success');
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('fechaInicio').value = '';
+            document.getElementById('fechaFin').value = '';
+            document.getElementById('buscarDescripcion').value = '';
+
+            gastosFiltrados = [...gastosOriginales];
+            mostrarGastos(gastosFiltrados);
+            actualizarEstadisticas(gastosFiltrados);
+
+            configurarFechasPorDefecto();
+            showAlert('🔄 Filtros limpiados', 'success');
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <span>${type === 'success' ? '✅' : '⚠️'}</span>
+                <span>${message}</span>
+            `;
+            container.innerHTML = '';
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function cerrarSesion() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('usuario');
+                showAlert('Sesión cerrada exitosamente', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            }
+        }
+
+        // Menu toggle para móviles
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

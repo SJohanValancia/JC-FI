@@ -1052,6 +1052,42 @@ select:hover {
     border-color: var(--primary-light);
 }
 
+
+.btn-edit, .btn-delete {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-edit {
+    background: #10b981;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #059669;
+    transform: translateY(-2px);
+}
+
+.btn-delete {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -1063,7 +1099,7 @@ select:hover {
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo">🌾</div>
-            <div class="sidebar-title">Sistema Fincas</div>
+            <div class="sidebar-title">JC-Fi</div>
         </div>
 
       <!-- En el sidebar de dashboard.html, agregar estos dos nuevos items -->
@@ -1084,13 +1120,19 @@ select:hover {
     </a>
     <a href="#" class="menu-item" onclick="abrirHistorialFrutas(event)">
         <span class="menu-icon">📋</span>
-        <span>Historial Frutas</span>
+        <span>Historial recogidas</span>
     </a>
+
+    <!-- Después del enlace de Historial Frutas -->
+<a href="#" class="menu-item" onclick="abrirGestionPrecios(event)">
+    <span class="menu-icon">💰</span>
+    <span>Gestión de Precios</span>
+</a>
     
-    <div class="menu-item" data-section="reportes">
-        <span class="menu-icon">📊</span>
-        <span>Reportes</span>
-    </div>
+    <a href="reportes-gastos.html" class="menu-item">
+        <span class="menu-icon">📦</span>
+        <span>historial de gastos </span>
+    </a>
     <div class="menu-item" data-section="usuarios">
         <span class="menu-icon">👥</span>
         <span>Usuarios</span>
@@ -1618,52 +1660,45 @@ async function guardarGastos() {
     const num = parseInt(document.getElementById('numGastos').value);
     const gastos = [];
     let valido = true;
-
-    // Agrupar TODOS los productos en un solo gasto
-    const todosLosProductos = [];
     
     for (let i = 1; i <= num; i++) {
+        const fecha = document.getElementById(`fecha${i}`).value;
         const descripcion = document.getElementById(`desc${i}`).value.trim();
         const valor = parseFloat(document.getElementById(`valor${i}`).value);
         const inventarioIdsJson = document.getElementById(`inventarioIds${i}`).value;
+
+        // 🔥 VALIDAR FECHA
+        if (!fecha) {
+            showAlert(`Por favor selecciona la fecha del gasto #${i}`, 'error');
+            valido = false;
+            break;
+        }
 
         if (!descripcion || !valor || valor <= 0) {
             showAlert(`Por favor completa todos los campos del gasto #${i}`, 'error');
             valido = false;
             break;
         }
-
-        // Acumular todos los productos
+        
+        const productosDelGasto = [];
         if (inventarioIdsJson && inventarioIdsJson !== '') {
             const productos = JSON.parse(inventarioIdsJson);
-            todosLosProductos.push(...productos);
+            productosDelGasto.push(...productos.map(p => ({
+                inventarioId: p.id,
+                nombre: p.nombre,
+                cantidadUsada: p.cantidad
+            })));
         }
+        
+        gastos.push({
+            fechaGasto: fecha, // 🔥 AGREGAR FECHA
+            descripcion: descripcion,
+            valor: valor,
+            productosInventario: productosDelGasto
+        });
     }
 
     if (!valido) return;
-
-// Crear gastos individuales con sus propios productos
-for (let i = 1; i <= num; i++) {
-    const descripcion = document.getElementById(`desc${i}`).value.trim();
-    const valor = parseFloat(document.getElementById(`valor${i}`).value);
-    const inventarioIdsJson = document.getElementById(`inventarioIds${i}`).value;
-    
-    const productosDelGasto = [];
-    if (inventarioIdsJson && inventarioIdsJson !== '') {
-        const productos = JSON.parse(inventarioIdsJson);
-        productosDelGasto.push(...productos.map(p => ({
-            inventarioId: p.id,
-            nombre: p.nombre,
-            cantidadUsada: p.cantidad
-        })));
-    }
-    
-    gastos.push({
-        descripcion: descripcion, // ✅ Ahora usa la descripción real
-        valor: valor,
-        productosInventario: productosDelGasto
-    });
-}
 
     if (gastos.length === 0) {
         showAlert('No hay gastos para guardar', 'error');
@@ -1678,7 +1713,7 @@ for (let i = 1; i <= num; i++) {
 
     try {
         const token = localStorage.getItem('token');
-        // Enviar cada gasto individualmente (ahora son únicos)
+        
         for (let gasto of gastos) {
             const response = await fetch(`${API_URL}/gastos`, {
                 method: 'POST',
@@ -1709,7 +1744,7 @@ for (let i = 1; i <= num; i++) {
         inventarioCache = null;
 
         cargarGastos();
-        cargarEstadisticasGastos(); // Actualizar estadísticas
+        cargarEstadisticasGastos();
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error de conexión al guardar gastos', 'error');
@@ -1718,7 +1753,6 @@ for (let i = 1; i <= num; i++) {
         saveBtn.disabled = false;
     }
 }
-
 
 async function cargarGastos() {
     const container = document.getElementById('expensesList');
@@ -1754,11 +1788,11 @@ async function cargarGastos() {
             const fragment = document.createDocumentFragment();
             
             gastos.forEach(gasto => {
-                const fecha = new Date(gasto.fechaCreacion);
+                // 🔥 USAR fechaGasto si existe, sino fechaCreacion
+                const fecha = new Date(gasto.fechaGasto || gasto.fechaCreacion);
                 const card = document.createElement('div');
                 card.className = 'expense-card';
                 
-                // Formatear productos usados
                 let productosHTML = '';
                 if (gasto.productosInventario && gasto.productosInventario.length > 0) {
                     const productosList = gasto.productosInventario.map(p => `
@@ -1781,7 +1815,11 @@ async function cargarGastos() {
                         <div>
                             <div class="expense-description">${gasto.descripcion}</div>
                             <div class="expense-date">
-                                📅 ${fecha.toLocaleDateString('es-CO')} - ${fecha.toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit'})}
+                                📅 ${fecha.toLocaleDateString('es-CO', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                })} - ${fecha.toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit'})}
                             </div>
                         </div>
                     </div>
@@ -1812,7 +1850,6 @@ async function cargarGastos() {
         loading.classList.remove('active');
     }
 }
-
 
 
 async function editarGasto(id) {
@@ -2068,8 +2105,13 @@ async function obtenerFincaSeleccionada() {
 }
 
 // Selector de fincas
+// Selector de fincas - CORREGIDO
 function mostrarSelectorFincas() {
     return new Promise((resolve, reject) => {
+        // 🔥 GUARDAR RESOLVER EN VARIABLE TEMPORAL GLOBAL
+        window.resolverFincaTemp = resolve;
+        window.rechazarFincaTemp = reject;
+        
         const modal = document.createElement('div');
         modal.style.cssText = `
             position: fixed;
@@ -2137,24 +2179,24 @@ function mostrarSelectorFincas() {
         document.body.appendChild(modal);
         
         // Cargar fincas
-        cargarFincasDisponibles(resolve, reject);
+        cargarFincasDisponibles();
     });
 }
-
 // Cargar fincas desde el servidor de FRUTAS
-async function cargarFincasDisponibles(resolve, reject) {
+// Cargar fincas desde el servidor de FRUTAS - CORREGIDO
+async function cargarFincasDisponibles() {
     const lista = document.getElementById('listaFincasModal');
     
     try {
         const usuario = JSON.parse(localStorage.getItem('usuario'));
         
         // 🔥 CONSULTAR AL SERVIDOR DE FRUTAS
-        const response = await fetch(`https://jc-frutas.onrender.com/fincas/por-admin/${usuario.nombre}`, {
+        const response = await fetch(`https://jc-frutas.onrender.com/fincas/por-admin/${usuario.usuario}`, {
             headers: {
                 'Content-Type': 'application/json'
             }
         });
-        
+
         if (!response.ok) throw new Error('Error al cargar fincas');
         
         const fincas = await response.json();
@@ -2162,7 +2204,7 @@ async function cargarFincasDisponibles(resolve, reject) {
         if (fincas.length === 0) {
             lista.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
-                    <p style="font-size: 18px; margin-bottom: 20px;">📭 No tienes fincas registradas</p>
+                    <p style="font-size: 18px; margin-bottom: 20px;">🔭 No tienes fincas registradas</p>
                     <button onclick="irACrearFinca()" style="
                         padding: 12px 24px;
                         background: rgba(255,255,255,0.3);
@@ -2179,8 +2221,9 @@ async function cargarFincasDisponibles(resolve, reject) {
             return;
         }
         
+        // 🔥 SIMPLIFICADO: No pasar resolver como string
         lista.innerHTML = fincas.map(finca => `
-            <div onclick="window.seleccionarFincaYResolver('${finca._id}', '${finca.nombre.replace(/'/g, "\\'")}', '${finca.propietario.replace(/'/g, "\\'")}', ${JSON.stringify(resolve)})" 
+            <div onclick="window.seleccionarFincaYResolver('${finca._id}', '${finca.nombre.replace(/'/g, "\\'")}', '${finca.propietario.replace(/'/g, "\\'")}', null)" 
                  style="
                     padding: 20px;
                     margin-bottom: 15px;
@@ -2214,12 +2257,18 @@ async function cargarFincasDisponibles(resolve, reject) {
                 <p style="opacity: 0.8; margin-top: 10px;">${error.message}</p>
             </div>
         `;
-        reject(error);
+        
+        // Rechazar la promesa si hay error
+        if (window.rechazarFincaTemp) {
+            window.rechazarFincaTemp(error);
+        }
     }
 }
 
+
 // Función global para seleccionar finca
-window.seleccionarFincaYResolver = function(id, nombre, propietario, resolver) {
+// 🔥 FUNCIÓN CORREGIDA
+window.seleccionarFincaYResolver = function(id, nombre, propietario, resolverString) {
     const fincaData = {
         id: id,
         nombre: nombre,
@@ -2234,23 +2283,27 @@ window.seleccionarFincaYResolver = function(id, nombre, propietario, resolver) {
     
     showAlert(`✅ Finca seleccionada: ${nombre}`, 'success');
     
-    // Resolver promesa con los datos de la finca
-    if (typeof resolver === 'function') {
-        resolver(fincaData);
-    } else {
-        // Si resolver es una string (por seguridad de JSON.stringify)
-        window.fincaSeleccionadaResolver(fincaData);
+    // 🔥 RESOLVER LA PROMESA CORRECTAMENTE
+    // La función resolve está almacenada en una variable temporal
+    if (window.resolverFincaTemp && typeof window.resolverFincaTemp === 'function') {
+        window.resolverFincaTemp(fincaData);
+        window.resolverFincaTemp = null; // Limpiar después de usar
     }
 };
 
 window.fincaSeleccionadaResolver = null;
-
-// Cerrar modal
+// Cerrar modal - CORREGIDO
 window.cerrarModalFincas = function() {
     const modal = document.querySelector('div[style*="position: fixed"]');
     if (modal) modal.remove();
+    
+    // 🔥 RECHAZAR LA PROMESA SI SE CANCELA
+    if (window.rechazarFincaTemp) {
+        window.rechazarFincaTemp(new Error('Usuario canceló la selección'));
+        window.rechazarFincaTemp = null;
+        window.resolverFincaTemp = null;
+    }
 };
-
 // Función para ir a crear finca
 window.irACrearFinca = function() {
     cerrarModalFincas();
@@ -2258,78 +2311,161 @@ window.irACrearFinca = function() {
     alert('Función de crear finca por implementar');
 };
 
-// 🔥 FUNCIÓN PRINCIPAL: Abrir Recogida de Frutas
+// 🔥 FUNCIÓN MEJORADA: Abrir Recogida de Frutas en Modal
 async function abrirRecogidaFrutas(event) {
-    event.preventDefault();
+  event.preventDefault();
+  
+  showAlert('Preparando sistema de frutas...', 'success');
+  
+  try {
+    // 1. Obtener datos del usuario actual
+    const token = localStorage.getItem('token');
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
     
-    showAlert('Preparando sistema de frutas...', 'success');
-    
-    try {
-        // 1. Sincronizar sesión
-        const sesion = sincronizarSesion();
-        if (!sesion) return;
-        
-        // 2. Obtener/seleccionar finca
-        const finca = await obtenerFincaSeleccionada();
-        if (!finca) {
-            showAlert('Operación cancelada', 'error');
-            return;
-        }
-        
-        // 3. Construir URL para el programa de frutas
-        const params = new URLSearchParams({
-            fincaId: finca.id,
-            finca: encodeURIComponent(finca.nombre),
-            propietario: encodeURIComponent(finca.propietario),
-            usuario: sesion.usuario,
-            usuarioAlias: encodeURIComponent(sesion.alias || sesion.nombre),
-            // 🔥 Parámetro especial para indicar que viene del programa principal
-            origenIntegracion: 'true'
-        });
-        
-        // 4. Abrir página de recogida
-        window.location.href = `recogida.html?${params.toString()}`;
-        
-    } catch (error) {
-        console.error('Error al abrir recogida de frutas:', error);
-        showAlert('Error al abrir sistema de frutas: ' + error.message, 'error');
+    if (!token || !usuario) {
+      showAlert('Error: No hay sesión activa', 'error');
+      return;
     }
+    
+    // 2. Obtener/seleccionar finca
+    const finca = await obtenerFincaSeleccionada();
+    if (!finca) {
+      showAlert('Operación cancelada', 'error');
+      return;
+    }
+    
+    // 3. Preparar datos de sesión
+    const sesionData = {
+      token: token,
+      usuario: usuario.usuario,
+      nombre: usuario.nombre,
+      rol: usuario.rol,
+      tipo: 1, // Asumir admin para el programa de frutas
+      alias: usuario.usuario
+    };
+    
+    // 4. Guardar en sessionStorage para el iframe
+    sessionStorage.setItem('sesionCompartida', JSON.stringify(sesionData));
+    
+    // 5. Construir URL
+    const params = new URLSearchParams({
+      fincaId: finca.id,
+      finca: encodeURIComponent(finca.nombre),
+      propietario: encodeURIComponent(finca.propietario),
+      usuario: usuario.usuario,
+      usuarioAlias: usuario.usuario,
+      origenIntegracion: 'true'
+    });
+    
+    // 6. 🔥 ABRIR EN MODAL IFRAME en lugar de redireccionar
+    const modal = document.getElementById('modalRecogidaFrutas');
+    const iframe = document.getElementById('iframeRecogida');
+    
+    iframe.src = `https://jc-frutas.onrender.com/recogida.html?${params.toString()}`;
+    modal.style.display = 'flex';
+    
+    showAlert('✅ Sistema de frutas cargado', 'success');
+    
+  } catch (error) {
+    console.error('Error al abrir recogida de frutas:', error);
+    showAlert('Error al abrir sistema de frutas: ' + error.message, 'error');
+  }
 }
 
-// 🔥 FUNCIÓN PRINCIPAL: Abrir Historial de Frutas
+// 🔥 FUNCIÓN MEJORADA: Abrir Historial de Frutas en Modal
 async function abrirHistorialFrutas(event) {
-    event.preventDefault();
+  event.preventDefault();
+  
+  showAlert('Cargando historial de frutas...', 'success');
+  
+  try {
+    const token = localStorage.getItem('token');
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
     
-    showAlert('Cargando historial de frutas...', 'success');
-    
-    try {
-        // 1. Sincronizar sesión
-        const sesion = sincronizarSesion();
-        if (!sesion) return;
-        
-        // 2. Obtener/seleccionar finca
-        const finca = await obtenerFincaSeleccionada();
-        if (!finca) {
-            showAlert('Operación cancelada', 'error');
-            return;
-        }
-        
-        // 3. Construir URL
-        const params = new URLSearchParams({
-            id: finca.id,
-            finca: encodeURIComponent(finca.nombre),
-            usuario: sesion.usuario,
-            origenIntegracion: 'true'
-        });
-        
-        // 4. Abrir historial
-        window.location.href = `historial.html?${params.toString()}`;
-        
-    } catch (error) {
-        console.error('Error al abrir historial:', error);
-        showAlert('Error al abrir historial: ' + error.message, 'error');
+    if (!token || !usuario) {
+      showAlert('Error: No hay sesión activa', 'error');
+      return;
     }
+    
+    const finca = await obtenerFincaSeleccionada();
+    if (!finca) {
+      showAlert('Operación cancelada', 'error');
+      return;
+    }
+    
+    const sesionData = {
+      token: token,
+      usuario: usuario.usuario,
+      nombre: usuario.nombre,
+      rol: usuario.rol
+    };
+    
+    sessionStorage.setItem('sesionCompartida', JSON.stringify(sesionData));
+    
+    const params = new URLSearchParams({
+      id: finca.id,
+      finca: encodeURIComponent(finca.nombre),
+      usuario: usuario.usuario,
+      origenIntegracion: 'true'
+    });
+    
+    const modal = document.getElementById('modalHistorialFrutas');
+    const iframe = document.getElementById('iframeHistorial');
+    
+    iframe.src = `https://jc-frutas.onrender.com/historial.html?${params.toString()}`;
+    modal.style.display = 'flex';
+    
+    showAlert('✅ Historial cargado', 'success');
+    
+  } catch (error) {
+    console.error('Error al abrir historial:', error);
+    showAlert('Error al abrir historial: ' + error.message, 'error');
+  }
 }
+
+// 🔥 FUNCIONES PARA CERRAR MODALES
+function cerrarModalRecogida() {
+  const modal = document.getElementById('modalRecogidaFrutas');
+  const iframe = document.getElementById('iframeRecogida');
+  
+  modal.style.display = 'none';
+  iframe.src = 'about:blank'; // Limpiar iframe
+  
+  showAlert('✅ Modal cerrado', 'success');
+}
+
+function cerrarModalHistorial() {
+  const modal = document.getElementById('modalHistorialFrutas');
+  const iframe = document.getElementById('iframeHistorial');
+  
+  modal.style.display = 'none';
+  iframe.src = 'about:blank'; // Limpiar iframe
+  
+  showAlert('✅ Modal cerrado', 'success');
+}
+
+// 🔥 DETECTAR CUANDO EL IFRAME TERMINE UNA ACCIÓN
+window.addEventListener('message', function(event) {
+  // Verificar origen por seguridad
+  if (event.origin !== 'https://jc-frutas.onrender.com') return;
+  
+  const data = event.data;
+  
+  if (data.action === 'recogidaGuardada') {
+    showAlert('✅ Recogida guardada exitosamente', 'success');
+  }
+  
+  // 🔥 NUEVO: Detectar cuando se guardan precios
+  if (data.action === 'preciosGuardados') {
+    showAlert('✅ Precios actualizados exitosamente', 'success');
+  }
+  
+  if (data.action === 'cerrarModal') {
+    cerrarModalRecogida();
+    cerrarModalHistorial();
+    cerrarModalPrecios(); // 🔥 NUEVO
+  }
+});
 
 // Hacer funciones globales
 window.abrirRecogidaFrutas = abrirRecogidaFrutas;
@@ -2340,8 +2476,123 @@ window.cambiarFinca = function() {
     localStorage.removeItem('fincaActual');
     showAlert('Finca deseleccionada. Se solicitará en la próxima recogida.', 'success');
 };
+
+// 🔥 FUNCIÓN: Abrir Gestión de Precios en Modal
+async function abrirGestionPrecios(event) {
+  event.preventDefault();
+  
+  showAlert('Preparando gestión de precios...', 'success');
+  
+  try {
+    // 1. Obtener datos del usuario actual
+    const token = localStorage.getItem('token');
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    
+    if (!token || !usuario) {
+      showAlert('Error: No hay sesión activa', 'error');
+      return;
+    }
+    
+    // 2. Obtener/seleccionar finca
+    const finca = await obtenerFincaSeleccionada();
+    if (!finca) {
+      showAlert('Operación cancelada', 'error');
+      return;
+    }
+    
+    // 3. Preparar datos de sesión
+    const sesionData = {
+      token: token,
+      usuario: usuario.usuario,
+      nombre: usuario.nombre,
+      rol: usuario.rol,
+      tipo: 1,
+      alias: usuario.usuario
+    };
+    
+    // 4. Guardar en sessionStorage para el iframe
+    sessionStorage.setItem('sesionCompartida', JSON.stringify(sesionData));
+    
+    // 5. Construir URL para precios.html
+    const params = new URLSearchParams({
+      id: finca.id,
+      finca: encodeURIComponent(finca.nombre),
+      propietario: encodeURIComponent(finca.propietario),
+      usuario: usuario.usuario,
+      usuarioAlias: usuario.usuario,
+      origenIntegracion: 'true'
+    });
+    
+    // 6. Abrir en Modal iframe
+    const modal = document.getElementById('modalGestionPrecios');
+    const iframe = document.getElementById('iframePrecios');
+    
+    iframe.src = `https://jc-frutas.onrender.com/precios.html?${params.toString()}`;
+    modal.style.display = 'flex';
+    
+    showAlert('✅ Gestión de precios cargada', 'success');
+    
+  } catch (error) {
+    console.error('Error al abrir gestión de precios:', error);
+    showAlert('Error al abrir gestión de precios: ' + error.message, 'error');
+  }
+}
+
+// 🔥 FUNCIÓN: Cerrar Modal de Precios
+function cerrarModalPrecios() {
+  const modal = document.getElementById('modalGestionPrecios');
+  const iframe = document.getElementById('iframePrecios');
+  
+  modal.style.display = 'none';
+  iframe.src = 'about:blank'; // Limpiar iframe
+  
+  showAlert('✅ Modal cerrado', 'success');
+}
+
+// Hacer función global
+window.abrirGestionPrecios = abrirGestionPrecios;
+window.cerrarModalPrecios = cerrarModalPrecios;
+
+
 </script>
 
+<!-- Agregar este modal al final del body en dashboard.html, antes de los scripts -->
+<div id="modalRecogidaFrutas" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000;">
+  <div style="position: relative; width: 100%; height: 100%; padding: 20px;">
+    <button onclick="cerrarModalRecogida()" style="position: absolute; top: 30px; right: 30px; background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; z-index: 20001; font-size: 16px;">
+      ✖ Cerrar
+    </button>
+<iframe 
+  id="iframeRecogida" 
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
+  style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
+  frameborder="0"
+></iframe> </div>
+</div>
+
+<div id="modalHistorialFrutas" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000;">
+  <div style="position: relative; width: 100%; height: 100%; padding: 20px;">
+    <button onclick="cerrarModalHistorial()" style="position: absolute; top: 30px; right: 30px; background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; z-index: 20001; font-size: 16px;">
+      ✖ Cerrar
+    </button>
+    <iframe id="iframeHistorial" style="width: 100%; height: 100%; border: none; border-radius: 10px;" frameborder="0"></iframe>
+  </div>
+</div>
+
+<!-- Modal para Gestión de Precios -->
+<div id="modalGestionPrecios" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000;">
+  <div style="position: relative; width: 100%; height: 100%; padding: 20px;">
+    <button onclick="cerrarModalPrecios()" style="position: absolute; top: 30px; right: 30px; background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; z-index: 20001; font-size: 16px;">
+      ✖ Cerrar
+    </button>
+    <iframe 
+      id="iframePrecios" 
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
+      style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
+      frameborder="0"
+    ></iframe>
+  </div>
+</div>
 
 </body>
 </html>
