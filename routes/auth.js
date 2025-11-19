@@ -237,6 +237,7 @@ router.get('/verificar', verificarToken, async (req, res) => {
 });
 
 // Agregar finca
+// En auth.js del programa principal
 router.post('/agregar-finca', verificarToken, async (req, res) => {
   try {
     const { nombreFinca } = req.body;
@@ -275,6 +276,34 @@ router.post('/agregar-finca', verificarToken, async (req, res) => {
     }
     
     await usuario.save();
+    
+    // 🔥 SINCRONIZACIÓN CON JC-FRUTAS
+    try {
+      console.log('🔄 Sincronizando finca con programa de frutas...');
+      
+      const responseFinca = await fetch('https://jc-frutas.onrender.com/fincas/agregar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombreFinca.trim(),
+          propietario: usuario.nombre,
+          usuario: usuario.usuario,
+          adminAlias: usuario.usuario // Usar el usuario como adminAlias
+        })
+      });
+
+      if (responseFinca.ok) {
+        const dataFinca = await responseFinca.json();
+        console.log('✅ Finca creada en programa de frutas:', dataFinca);
+      } else {
+        const errorFinca = await responseFinca.text();
+        console.warn('⚠️ Error al crear finca en frutas:', errorFinca);
+        // No fallar la operación principal
+      }
+    } catch (errorSync) {
+      console.error('❌ Error de sincronización con frutas:', errorSync.message);
+      // No fallar la operación principal
+    }
     
     res.json({
       success: true,
