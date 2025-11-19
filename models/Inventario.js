@@ -8,8 +8,9 @@ const inventarioSchema = new mongoose.Schema({
   },
   precio: {
     type: Number,
-    required: [true, 'El precio es obligatorio'],
+    default: 0,  // Cambiado: ahora tiene valor por defecto
     min: [0, 'El precio debe ser positivo']
+    // Eliminado required
   },
   litros: {
     type: Number,
@@ -20,7 +21,6 @@ const inventarioSchema = new mongoose.Schema({
     type: String,
     required: [true, 'La categoría es obligatoria'],
     trim: true
-    // Eliminamos el enum para aceptar cualquier texto
   },
   stock: {
     type: Number,
@@ -37,12 +37,11 @@ const inventarioSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-
   finca: {
-  type: String,
-  required: true,
-  index: true
-},
+    type: String,
+    required: true,
+    index: true
+  },
   fechaCreacion: {
     type: Date,
     default: Date.now
@@ -53,7 +52,6 @@ const inventarioSchema = new mongoose.Schema({
   }
 });
 
-// Actualizar fecha de modificación antes de guardar
 inventarioSchema.pre('save', function(next) {
   this.actualizado = Date.now();
   next();

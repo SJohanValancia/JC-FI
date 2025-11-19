@@ -771,8 +771,8 @@
                         <input type="text" id="nombre" placeholder="Ej: Fertilizante NPK" required>
                     </div>
                     <div class="form-group">
-                        <label for="precio">Precio ($) *</label>
-                        <input type="number" id="precio" placeholder="Ej: 45000" min="0" step="0.01" required>
+                        <label for="precio">Precio ($)</label>
+<input type="number" id="precio" placeholder="Ej: 45000" min="0" step="0.01">
                     </div>
                     <div class="form-group">
                         <label for="litros">Litros (Opcional)</label>
@@ -956,59 +956,67 @@ function cerrarAlertaStock() {
         }
     });
 
-    async function guardarProducto() {
-        const nombre = document.getElementById('nombre').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
-        const litros = document.getElementById('litros').value ? parseFloat(document.getElementById('litros').value) : null;
-        const categoria = document.getElementById('categoria').value;
-        const stock = parseInt(document.getElementById('stock').value);
+async function guardarProducto() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const precioInput = document.getElementById('precio').value.trim();
+    const precio = precioInput ? parseFloat(precioInput) : 0; // Manejar campo vacío
+    const litros = document.getElementById('litros').value ? parseFloat(document.getElementById('litros').value) : null;
+    const categoria = document.getElementById('categoria').value.trim();
+    const stock = parseInt(document.getElementById('stock').value);
 
-        if (!nombre || !precio || precio <= 0 || !categoria || stock < 0) {
-            showAlert('Por favor completa todos los campos obligatorios correctamente', 'error');
-            return;
-        }
-
-        const loading = document.getElementById('loading');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        loading.classList.add('active');
-        submitBtn.disabled = true;
-
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/inventario`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    nombre,
-                    precio,
-                    litros,
-                    categoria,
-                    stock
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert('✅ Producto agregado exitosamente', 'success');
-                document.getElementById('productForm').reset();
-                cargarInventario();
-                cargarEstadisticas();
-            } else {
-                showAlert(data.message || 'Error al guardar producto', 'error');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('Error de conexión al guardar producto', 'error');
-        } finally {
-            loading.classList.remove('active');
-            submitBtn.disabled = false;
-        }
+    // Validación modificada
+    if (!nombre || !categoria || isNaN(stock) || stock < 0) {
+        showAlert('Por favor completa todos los campos obligatorios correctamente', 'error');
+        return;
     }
+    
+    // Validar precio solo si se ingresó
+    if (precioInput && (isNaN(precio) || precio < 0)) {
+        showAlert('El precio debe ser un número positivo', 'error');
+        return;
+    }
+
+    const loading = document.getElementById('loading');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    loading.classList.add('active');
+    submitBtn.disabled = true;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/inventario`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                nombre,
+                precio: precio, // Ahora siempre será 0 si está vacío
+                litros,
+                categoria,
+                stock
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert('✅ Producto agregado exitosamente', 'success');
+            document.getElementById('productForm').reset();
+            cargarInventario();
+            cargarEstadisticas();
+        } else {
+            showAlert(data.message || 'Error al guardar producto', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al guardar producto', 'error');
+    } finally {
+        loading.classList.remove('active');
+        submitBtn.disabled = false;
+    }
+}
 
 // En el script, reemplaza la función cargarInventario con esta versión mejorada:
 async function cargarInventario() {
@@ -1180,61 +1188,68 @@ function filtrarProductos() {
         }
     }
 
-    async function actualizarProducto() {
-        const nombre = document.getElementById('nombre').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
-        const litros = document.getElementById('litros').value ? parseFloat(document.getElementById('litros').value) : null;
-        const categoria = document.getElementById('categoria').value;
-        const stock = parseInt(document.getElementById('stock').value);
+async function actualizarProducto() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const precioInput = document.getElementById('precio').value.trim();
+    const precio = precioInput ? parseFloat(precioInput) : 0; // Manejar campo vacío
+    const litros = document.getElementById('litros').value ? parseFloat(document.getElementById('litros').value) : null;
+    const categoria = document.getElementById('categoria').value.trim();
+    const stock = parseInt(document.getElementById('stock').value);
 
-        if (!nombre || !precio || precio <= 0 || !categoria || stock < 0) {
-            showAlert('Por favor completa todos los campos correctamente', 'error');
-            return;
-        }
-
-        const loading = document.getElementById('loading');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        loading.classList.add('active');
-        submitBtn.disabled = true;
-
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/inventario/${editingProductId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    nombre,
-                    precio,
-                    litros,
-                    categoria,
-                    stock
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert('✅ Producto actualizado exitosamente', 'success');
-                cancelarEdicion();
-                cargarInventario();
-                cargarEstadisticas();
-            } else {
-                showAlert(data.message || 'Error al actualizar producto', 'error');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('Error de conexión al actualizar producto', 'error');
-        } finally {
-            loading.classList.remove('active');
-            submitBtn.disabled = false;
-        }
+    // Validación modificada
+    if (!nombre || !categoria || isNaN(stock) || stock < 0) {
+        showAlert('Por favor completa todos los campos correctamente', 'error');
+        return;
+    }
+    
+    // Validar precio solo si se ingresó
+    if (precioInput && (isNaN(precio) || precio < 0)) {
+        showAlert('El precio debe ser un número positivo', 'error');
+        return;
     }
 
-    async function eliminarProducto(id) {
+    const loading = document.getElementById('loading');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    loading.classList.add('active');
+    submitBtn.disabled = true;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/inventario/${editingProductId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                nombre,
+                precio: precio, // Ahora siempre será 0 si está vacío
+                litros,
+                categoria,
+                stock
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert('✅ Producto actualizado exitosamente', 'success');
+            cancelarEdicion();
+            cargarInventario();
+            cargarEstadisticas();
+        } else {
+            showAlert(data.message || 'Error al actualizar producto', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al actualizar producto', 'error');
+    } finally {
+        loading.classList.remove('active');
+        submitBtn.disabled = false;
+    }
+}
+async function eliminarProducto(id) {
         if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
             return;
         }

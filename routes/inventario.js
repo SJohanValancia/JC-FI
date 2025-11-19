@@ -56,20 +56,30 @@ const producto = await Inventario.findOne({
 });
 
 // Crear producto
+// Crear producto
 router.post('/', verificarToken, async (req, res) => {
   try {
     const { nombre, precio, litros, categoria, stock } = req.body;
     
-    if (!nombre || !precio || precio <= 0 || !categoria || stock === undefined || stock < 0) {
+    // Validación modificada: precio ya no es obligatorio
+    if (!nombre || !categoria || stock === undefined || stock < 0) {
       return res.status(400).json({
         success: false,
         message: 'Todos los campos obligatorios deben ser válidos'
       });
     }
     
+    // Validar que si se envía precio, sea positivo
+    if (precio !== undefined && precio < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El precio debe ser positivo'
+      });
+    }
+    
     const nuevoProducto = await Inventario.create({
       nombre,
-      precio,
+      precio: precio || 0,  // Si no viene precio, usa 0
       litros: litros || null,
       categoria,
       stock,

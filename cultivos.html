@@ -28,12 +28,13 @@
             --shadow-lg: rgba(0, 0, 0, 0.15);
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-light);
-            color: var(--text-dark);
-            padding: 30px;
-        }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-light);
+    color: var(--text-dark);
+    padding: 30px;
+    margin-left: 280px; /* AÑADE ESTA LÍNEA */
+}
 
         .container {
             max-width: 1400px;
@@ -478,12 +479,204 @@
         .motivo-input::placeholder {
             color: rgba(255,255,255,0.6);
         }
+
+        /* Sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+    padding: 30px 20px;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: 4px 0 20px var(--shadow-lg);
+}
+
+.sidebar.hidden {
+    transform: translateX(-100%);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-logo {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.sidebar-title {
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.menu-item {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.menu-item.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.menu-icon {
+    font-size: 20px;
+}
+
+.logout-btn {
+    margin-top: auto;
+    padding: 15px 20px;
+    background: rgba(220, 38, 38, 0.2);
+    border: 2px solid rgba(220, 38, 38, 0.4);
+    color: white;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 600;
+    width: 100%;
+}
+
+.logout-btn:hover {
+    background: rgba(220, 38, 38, 0.3);
+    transform: scale(1.02);
+}
+
+/* Botón de menú móvil */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 20px;
+    z-index: 1001;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow-lg);
+}
+
+.menu-toggle:hover {
+    background: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    body {
+        padding: 15px;
+        margin-left: 0;
+    }
+
+    .container {
+        margin-top: 60px; /* Espacio para el botón */
+    }
+
+    .header h1 {
+        font-size: 24px;
+    }
+
+    .section {
+        padding: 20px;
+    }
+
+    .cultivos-grid {
+        grid-template-columns: 1fr;
+    }
+}
     </style>
 </head>
 <body>
-    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">🌾</div>
+        <div class="sidebar-title">JC-Fi</div>
+    </div>
 
+    <nav>
+        <a href="dashboard.html" class="menu-item">
+            <span class="menu-icon">💰</span>
+            <span>Gastos</span>
+        </a>
+        <a href="inventario.html" class="menu-item">
+            <span class="menu-icon">📦</span>
+            <span>Inventario</span>
+        </a>
+        <a href="reportes-gastos.html" class="menu-item">
+            <span class="menu-icon">📊</span>
+            <span>Historial de gastos</span>
+        </a>
+        <a href="liquidacion-diaria.html" class="menu-item">
+            <span class="menu-icon">💰</span>
+            <span>Liquidación Diaria</span>
+        </a>
+        <a href="historial-liquidaciones.html" class="menu-item">
+            <span class="menu-icon">📋</span>
+            <span>Historial Liquidaciones</span>
+        </a>
+        <a href="cultivos.html" class="menu-item active">
+            <span class="menu-icon">🌾</span>
+            <span>Gestión de Cultivos</span>
+        </a>
+        <a href="historial-cultivos.html" class="menu-item">
+            <span class="menu-icon">📊</span>
+            <span>Historial de Cultivos</span>
+        </a>
+    </nav>
+
+    <button class="logout-btn" onclick="cerrarSesion()">
+        🚪 Cerrar Sesión
+    </button>
+</aside>
     <div class="container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+
         <div class="header">
             <h1>🌾 Gestión de Cultivos</h1>
             <p>Administra tus cultivos de manera eficiente</p>
@@ -513,9 +706,15 @@
                 </div>
             </div>
 
-            <button class="btn-primary" onclick="registrarCultivo()">
-                💾 Registrar Cultivo
-            </button>
+ <div style="display: flex; gap: 10px;">
+    <button class="btn-primary" id="btnRegistrar" onclick="registrarCultivo()" style="flex: 1;">
+        💾 Registrar Cultivo
+    </button>
+    <button class="btn-primary" id="btnCancelar" onclick="cancelarEdicion()" 
+            style="flex: 1; background: #6b7280; display: none;">
+        ✖ Cancelar
+    </button>
+</div>
         </div>
 
         <!-- Lista de Cultivos -->
@@ -534,290 +733,361 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = 'https://jc-fi.onrender.com/api';
-        let cultivoEnEdicion = null;
+<script>
+    const API_URL = 'https://jc-fi.onrender.com/api';
+    let cultivoEnEdicion = null;
 
-        window.addEventListener('load', () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = 'index.html';
-                return;
-            }
-            cargarCultivos();
-        });
+    window.addEventListener('load', () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'index.html';
+            return;
+        }
+        cargarCultivos();
+    });
 
-        async function registrarCultivo() {
-            const nombre = document.getElementById('nombreCultivo').value.trim();
-            const variedad = document.getElementById('variedadCultivo').value.trim();
-            const cantidad = parseInt(document.getElementById('cantidadCultivo').value);
+    async function registrarCultivo() {
+        const nombre = document.getElementById('nombreCultivo').value.trim();
+        const variedad = document.getElementById('variedadCultivo').value.trim();
+        const cantidad = parseInt(document.getElementById('cantidadCultivo').value);
 
-            if (!nombre || !cantidad || cantidad <= 0) {
-                showAlert('Por favor completa todos los campos obligatorios correctamente', 'error');
-                return;
-            }
-
-            const loading = document.getElementById('loading');
-            loading.classList.add('active');
-
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/cultivos`, {
-                    method: cultivoEnEdicion ? 'PUT' : 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        nombre,
-                        variedad: variedad || '',
-                        cantidad
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert(`✅ Cultivo ${cultivoEnEdicion ? 'actualizado' : 'registrado'} exitosamente`, 'success');
-                    
-                    document.getElementById('nombreCultivo').value = '';
-                    document.getElementById('variedadCultivo').value = '';
-                    document.getElementById('cantidadCultivo').value = '';
-                    
-                    cultivoEnEdicion = null;
-                    cargarCultivos();
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al registrar cultivo', 'error');
-            } finally {
-                loading.classList.remove('active');
-            }
+        if (!nombre || !cantidad || cantidad <= 0) {
+            showAlert('Por favor completa todos los campos obligatorios correctamente', 'error');
+            return;
         }
 
-        async function cargarCultivos() {
-            const container = document.getElementById('cultivosContainer');
-            const loading = document.getElementById('loading');
+        const loading = document.getElementById('loading');
+        loading.classList.add('active');
 
-            loading.classList.add('active');
+        try {
+            const token = localStorage.getItem('token');
+            
+            const method = cultivoEnEdicion ? 'PUT' : 'POST';
+            const url = cultivoEnEdicion 
+                ? `${API_URL}/cultivos/${cultivoEnEdicion}` 
+                : `${API_URL}/cultivos`;
 
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/cultivos`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    nombre,
+                    variedad: variedad || '',
+                    cantidad
+                })
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (data.success) {
-                    const cultivos = data.cultivos;
+            if (data.success) {
+                showAlert(`✅ Cultivo ${cultivoEnEdicion ? 'actualizado' : 'registrado'} exitosamente`, 'success');
+                
+                document.getElementById('nombreCultivo').value = '';
+                document.getElementById('variedadCultivo').value = '';
+                document.getElementById('cantidadCultivo').value = '';
+                
+                cancelarEdicion();
+                cargarCultivos();
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al procesar cultivo', 'error');
+        } finally {
+            loading.classList.remove('active');
+        }
+    }
 
-                    if (cultivos.length === 0) {
-                        container.innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-icon">🌱</div>
-                                <p class="empty-text">No hay cultivos registrados</p>
-                                <p style="margin-top: 10px; opacity: 0.7;">¡Registra tu primer cultivo arriba!</p>
+    function cancelarEdicion() {
+        cultivoEnEdicion = null;
+        
+        document.getElementById('nombreCultivo').value = '';
+        document.getElementById('variedadCultivo').value = '';
+        document.getElementById('cantidadCultivo').value = '';
+        
+        const btnRegistrar = document.getElementById('btnRegistrar');
+        const btnCancelar = document.getElementById('btnCancelar');
+        const titulo = document.querySelector('.section-title');
+        
+        btnRegistrar.innerHTML = '💾 Registrar Cultivo';
+        btnCancelar.style.display = 'none';
+        
+        if (titulo) {
+            titulo.innerHTML = '<span>➕</span> Registrar Nuevo Cultivo';
+        }
+    }
+
+    function cerrarSesion() {
+        if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            showAlert('Sesión cerrada exitosamente', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+    }
+
+    // Toggle menú en móviles
+    document.getElementById('menuToggle').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+    });
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+        
+        if (window.innerWidth <= 768 && 
+            sidebar.classList.contains('active') && 
+            !sidebar.contains(e.target) && 
+            !menuToggle.contains(e.target)) {
+            sidebar.classList.remove('active');
+        }
+    });
+
+    async function cargarCultivos() {
+        const container = document.getElementById('cultivosContainer');
+        const loading = document.getElementById('loading');
+
+        loading.classList.add('active');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/cultivos`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const cultivos = data.cultivos;
+
+                if (cultivos.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🌱</div>
+                            <p class="empty-text">No hay cultivos registrados</p>
+                            <p style="margin-top: 10px; opacity: 0.7;">¡Registra tu primer cultivo arriba!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = cultivos.map(cultivo => `
+                    <div class="cultivo-card" id="card-${cultivo._id}" onclick="toggleFlip('${cultivo._id}')">
+                        <div class="cultivo-front">
+                            <div class="cultivo-nombre">
+                                🌾 ${cultivo.nombre}
                             </div>
-                        `;
-                        return;
-                    }
-
-                    container.innerHTML = cultivos.map(cultivo => `
-                        <div class="cultivo-card" id="card-${cultivo._id}" onclick="toggleFlip('${cultivo._id}')">
-                            <div class="cultivo-front">
-                                <div class="cultivo-nombre">
-                                    🌾 ${cultivo.nombre}
-                                </div>
-                                ${cultivo.variedad ? `<span class="cultivo-variedad">🏷️ ${cultivo.variedad}</span>` : ''}
-                                <div class="cultivo-cantidad">${cultivo.cantidadActual}</div>
-                                <div class="cultivo-label">cultivos activos</div>
-                                <div style="font-size: 12px; color: var(--text-light); text-align: center; margin-bottom: 10px;">
-                                    Inicial: ${cultivo.cantidadInicial} | Bajas: ${cultivo.bajas.length}
-                                </div>
-                                <div class="cultivo-actions" onclick="event.stopPropagation()">
-                                    <button class="btn-edit" onclick="editar<button class="btn-edit" onclick="editarCultivo('${cultivo._id}')">
-                                        ✏️ Editar
-                                    </button>
-                                    <button class="btn-delete" onclick="eliminarCultivo('${cultivo._id}')">
-                                        🗑️ Eliminar
-                                    </button>
-                                </div>
+                            ${cultivo.variedad ? `<span class="cultivo-variedad">🏷️ ${cultivo.variedad}</span>` : ''}
+                            <div class="cultivo-cantidad">${cultivo.cantidadActual}</div>
+                            <div class="cultivo-label">cultivos activos</div>
+                            <div style="font-size: 12px; color: var(--text-light); text-align: center; margin-bottom: 10px;">
+                                Inicial: ${cultivo.cantidadInicial} | Bajas: ${cultivo.bajas.length}
                             </div>
-                            <div class="cultivo-back">
-                                <div class="baja-form">
-                                    <div class="baja-title">¿Dar de baja cultivos?</div>
-                                    <input type="number" 
-                                           class="baja-input" 
-                                           id="baja-${cultivo._id}" 
-                                           placeholder="0" 
-                                           min="1" 
-                                           max="${cultivo.cantidadActual}"
-                                           onclick="event.stopPropagation()">
-                                    <input type="text" 
-                                           class="motivo-input" 
-                                           id="motivo-${cultivo._id}" 
-                                           placeholder="Motivo (opcional)"
-                                           onclick="event.stopPropagation()">
-                                    <div style="color: rgba(255,255,255,0.8); margin-bottom: 15px; font-size: 14px;">
-                                        Disponibles: ${cultivo.cantidadActual}
-                                    </div>
-                                    <div class="baja-actions" onclick="event.stopPropagation()">
-                                        <button class="btn-confirmar" onclick="confirmarBaja('${cultivo._id}')">
-                                            ✓ Confirmar
-                                        </button>
-                                        <button class="btn-cancelar" onclick="toggleFlip('${cultivo._id}')">
-                                            ✕ Cancelar
-                                        </button>
-                                    </div>
+                            <div class="cultivo-actions" onclick="event.stopPropagation()">
+                                <button class="btn-edit" onclick="editarCultivo('${cultivo._id}')">
+                                    ✏️ Editar
+                                </button>
+                                <button class="btn-delete" onclick="eliminarCultivo('${cultivo._id}')">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cultivo-back">
+                            <div class="baja-form">
+                                <div class="baja-title">¿Dar de baja cultivos?</div>
+                                <input type="number" 
+                                       class="baja-input" 
+                                       id="baja-${cultivo._id}" 
+                                       placeholder="0" 
+                                       min="1" 
+                                       max="${cultivo.cantidadActual}"
+                                       onclick="event.stopPropagation()">
+                                <input type="text" 
+                                       class="motivo-input" 
+                                       id="motivo-${cultivo._id}" 
+                                       placeholder="Motivo (opcional)"
+                                       onclick="event.stopPropagation()">
+                                <div style="color: rgba(255,255,255,0.8); margin-bottom: 15px; font-size: 14px;">
+                                    Disponibles: ${cultivo.cantidadActual}
+                                </div>
+                                <div class="baja-actions" onclick="event.stopPropagation()">
+                                    <button class="btn-confirmar" onclick="confirmarBaja('${cultivo._id}')">
+                                        ✓ Confirmar
+                                    </button>
+                                    <button class="btn-cancelar" onclick="toggleFlip('${cultivo._id}')">
+                                        ✕ Cancelar
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    `).join('');
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al cargar cultivos', 'error');
+        } finally {
+            loading.classList.remove('active');
+        }
+    }
+
+    function toggleFlip(id) {
+        const card = document.getElementById(`card-${id}`);
+        card.classList.toggle('flipped');
+        
+        if (!card.classList.contains('flipped')) {
+            document.getElementById(`baja-${id}`).value = '';
+            document.getElementById(`motivo-${id}`).value = '';
+        }
+    }
+
+    async function confirmarBaja(id) {
+        const cantidad = parseInt(document.getElementById(`baja-${id}`).value);
+        const motivo = document.getElementById(`motivo-${id}`).value.trim();
+
+        if (!cantidad || cantidad <= 0) {
+            showAlert('Ingresa una cantidad válida', 'error');
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de dar de baja ${cantidad} cultivo(s)?`)) {
+            return;
+        }
+
+        const loading = document.getElementById('loading');
+        loading.classList.add('active');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/cultivos/${id}/dar-baja`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ cantidad, motivo })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(`✅ ${cantidad} cultivo(s) dado(s) de baja exitosamente`, 'success');
+                cargarCultivos();
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al dar de baja cultivos', 'error');
+        } finally {
+            loading.classList.remove('active');
+        }
+    }
+
+    async function editarCultivo(id) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/cultivos/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al cargar cultivos', 'error');
-            } finally {
-                loading.classList.remove('active');
-            }
-        }
+            });
 
-        function toggleFlip(id) {
-            const card = document.getElementById(`card-${id}`);
-            card.classList.toggle('flipped');
-            
-            // Limpiar campos cuando se voltea
-            if (!card.classList.contains('flipped')) {
-                document.getElementById(`baja-${id}`).value = '';
-                document.getElementById(`motivo-${id}`).value = '';
-            }
-        }
+            const data = await response.json();
 
-        async function confirmarBaja(id) {
-            const cantidad = parseInt(document.getElementById(`baja-${id}`).value);
-            const motivo = document.getElementById(`motivo-${id}`).value.trim();
-
-            if (!cantidad || cantidad <= 0) {
-                showAlert('Ingresa una cantidad válida', 'error');
-                return;
-            }
-
-            if (!confirm(`¿Estás seguro de dar de baja ${cantidad} cultivo(s)?`)) {
-                return;
-            }
-
-            const loading = document.getElementById('loading');
-            loading.classList.add('active');
-
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/cultivos/${id}/dar-baja`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ cantidad, motivo })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert(`✅ ${cantidad} cultivo(s) dado(s) de baja exitosamente`, 'success');
-                    cargarCultivos();
-                } else {
-                    showAlert(data.message, 'error');
+            if (data.success) {
+                const cultivo = data.cultivo;
+                
+                document.getElementById('nombreCultivo').value = cultivo.nombre;
+                document.getElementById('variedadCultivo').value = cultivo.variedad || '';
+                document.getElementById('cantidadCultivo').value = cultivo.cantidadActual;
+                
+                cultivoEnEdicion = id;
+                
+                const btnRegistrar = document.getElementById('btnRegistrar');
+                const btnCancelar = document.getElementById('btnCancelar');
+                const titulo = document.querySelector('.section-title');
+                
+                btnRegistrar.innerHTML = '✏️ Actualizar Cultivo';
+                btnCancelar.style.display = 'block';
+                
+                if (titulo) {
+                    titulo.innerHTML = '<span>✏️</span> Editar Cultivo';
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al dar de baja cultivos', 'error');
-            } finally {
-                loading.classList.remove('active');
+                
+                document.querySelector('.section').scrollIntoView({ behavior: 'smooth' });
+                showAlert('📝 Editando cultivo. Modifica los campos y guarda', 'success');
             }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al cargar cultivo para editar', 'error');
+        }
+    }
+
+    async function eliminarCultivo(id) {
+        if (!confirm('¿Estás seguro de eliminar este cultivo? Esta acción no se puede deshacer.')) {
+            return;
         }
 
-        async function editarCultivo(id) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/cultivos/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+        const loading = document.getElementById('loading');
+        loading.classList.add('active');
 
-                const data = await response.json();
-
-                if (data.success) {
-                    const cultivo = data.cultivo;
-                    
-                    document.getElementById('nombreCultivo').value = cultivo.nombre;
-                    document.getElementById('variedadCultivo').value = cultivo.variedad || '';
-                    document.getElementById('cantidadCultivo').value = cultivo.cantidadActual;
-                    
-                    cultivoEnEdicion = id;
-                    
-                    document.querySelector('.section').scrollIntoView({ behavior: 'smooth' });
-                    showAlert('Editando cultivo. Modifica los campos y guarda', 'success');
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/cultivos/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al cargar cultivo para editar', 'error');
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('✅ Cultivo eliminado exitosamente', 'success');
+                cargarCultivos();
+            } else {
+                showAlert(data.message, 'error');
             }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al eliminar cultivo', 'error');
+        } finally {
+            loading.classList.remove('active');
         }
+    }
 
-        async function eliminarCultivo(id) {
-            if (!confirm('¿Estás seguro de eliminar este cultivo? Esta acción no se puede deshacer.')) {
-                return;
-            }
+    function showAlert(message, type) {
+        const container = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            <span>${type === 'success' ? '✅' : '⚠️'}</span>
+            <span>${message}</span>
+        `;
+        container.innerHTML = '';
+        container.appendChild(alert);
 
-            const loading = document.getElementById('loading');
-            loading.classList.add('active');
-
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/cultivos/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert('✅ Cultivo eliminado exitosamente', 'success');
-                    cargarCultivos();
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al eliminar cultivo', 'error');
-            } finally {
-                loading.classList.remove('active');
-            }
-        }
-
-        function showAlert(message, type) {
-            const container = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `
-                <span>${type === 'success' ? '✅' : '⚠️'}</span>
-                <span>${message}</span>
-            `;
-            container.innerHTML = '';
-            container.appendChild(alert);
-
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
-        }
-    </script>
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+</script>
 </body>
 </html>
