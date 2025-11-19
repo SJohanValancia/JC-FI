@@ -36,7 +36,17 @@ const userSchema = new mongoose.Schema({
   fechaCreacion: {
     type: Date,
     default: Date.now
-  }
+  },
+  fincas: [{
+  nombre: String,
+  activa: { type: Boolean, default: false },
+  fechaCreacion: { type: Date, default: Date.now }
+}],
+fincaActiva: {
+  type: String,
+  default: ''
+}
+  
 });
 
 // Encriptar contraseña antes de guardar

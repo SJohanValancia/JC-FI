@@ -36,10 +36,11 @@ const gastoSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  finca: {
-    type: String,
-    default: ''
-  },
+finca: {
+  type: String,
+  required: true,  
+  index: true      
+},
   fechaCreacion: {
     type: Date,
     default: Date.now

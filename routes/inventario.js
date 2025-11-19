@@ -6,7 +6,7 @@ const { verificarToken } = require('../middleware/auth');
 // Obtener todo el inventario del usuario
 router.get('/', verificarToken, async (req, res) => {
   try {
-    const inventario = await Inventario.find({ usuario: req.usuario.id })
+    const inventario = await Inventario.find({ usuario: req.usuario.id, finca: req.usuario.fincaActiva })
       .populate('usuario', 'nombre usuario')
       .sort({ fechaCreacion: -1 });
     
@@ -28,10 +28,11 @@ router.get('/', verificarToken, async (req, res) => {
 // Obtener un producto por ID
 router.get('/:id', verificarToken, async (req, res) => {
   try {
-    const producto = await Inventario.findOne({
-      _id: req.params.id,
-      usuario: req.usuario.id
-    }).populate('usuario', 'nombre usuario');
+const producto = await Inventario.findOne({
+  _id: req.params.id,
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva
+}).populate('usuario', 'nombre usuario');
     
     if (!producto) {
       return res.status(404).json({
@@ -73,7 +74,8 @@ router.post('/', verificarToken, async (req, res) => {
       categoria,
       stock,
       usuario: req.usuario.id,
-      usuarioNombre: req.usuario.usuario
+      usuarioNombre: req.usuario.usuario,
+      finca: req.usuario.fincaActiva
     });
     
     res.status(201).json({
@@ -96,10 +98,11 @@ router.put('/:id', verificarToken, async (req, res) => {
   try {
     const { nombre, precio, litros, categoria, stock } = req.body;
     
-    const producto = await Inventario.findOne({
-      _id: req.params.id,
-      usuario: req.usuario.id
-    });
+const producto = await Inventario.findOne({
+  _id: req.params.id,
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva
+});
     
     if (!producto) {
       return res.status(404).json({
@@ -134,10 +137,11 @@ router.put('/:id', verificarToken, async (req, res) => {
 // Eliminar producto
 router.delete('/:id', verificarToken, async (req, res) => {
   try {
-    const producto = await Inventario.findOne({
-      _id: req.params.id,
-      usuario: req.usuario.id
-    });
+const producto = await Inventario.findOne({
+  _id: req.params.id,
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva
+});
     
     if (!producto) {
       return res.status(404).json({
@@ -165,7 +169,10 @@ router.delete('/:id', verificarToken, async (req, res) => {
 // Obtener estadísticas
 router.get('/stats/resumen', verificarToken, async (req, res) => {
   try {
-    const inventario = await Inventario.find({ usuario: req.usuario.id });
+    const inventario = await Inventario.find({ 
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva
+})
     
     const stats = {
       totalProductos: inventario.length,
@@ -200,10 +207,11 @@ router.get('/alertas/stock-bajo', verificarToken, async (req, res) => {
     // Limite configurable (por defecto 5 unidades)
     const limite = parseInt(req.query.limite) || 5;
     
-    const productosBajoStock = await Inventario.find({
-      usuario: req.usuario.id,
-      stock: { $lte: limite }
-    }).sort({ stock: 1 }); // Ordenar por stock ascendente
+const productosBajoStock = await Inventario.find({
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva,
+  stock: { $lte: limite }
+}).sort({ stock: 1 }); // Ordenar por stock ascendente
     
     const alertas = productosBajoStock.map(producto => ({
       id: producto._id,

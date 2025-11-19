@@ -37,6 +37,12 @@ const inventarioSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+
+  finca: {
+  type: String,
+  required: true,
+  index: true
+},
   fechaCreacion: {
     type: Date,
     default: Date.now

@@ -1088,6 +1088,100 @@ select:hover {
     transform: translateY(-2px);
 }
 
+.modal-fincas {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-fincas.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-fincas-content {
+    background: white;
+    border-radius: 24px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header-fincas {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.modal-header-fincas h2 {
+    font-size: 28px;
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+}
+
+.modal-header-fincas p {
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+.finca-item {
+    padding: 20px;
+    background: var(--bg-light);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.finca-item:hover {
+    background: var(--primary-light);
+    color: white;
+    transform: translateX(10px);
+}
+
+.finca-item.activa {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary-dark);
+}
+
+.finca-nombre {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.finca-badge {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -1145,6 +1239,11 @@ select:hover {
     <span>Historial Liquidaciones</span>
 </a>
 
+    <div class="menu-item" onclick="abrirModalAgregarFinca()">
+        <span class="menu-icon">🏡</span>
+        <span>¿Tienes más fincas?</span>
+    </div>
+
 </nav>
         <button class="logout-btn" onclick="cerrarSesion()">
             🚪 Cerrar Sesión
@@ -1161,8 +1260,9 @@ select:hover {
                     <h1 class="greeting" id="greeting">¡Buenos días, Usuario!</h1>
                     <p class="time-info" id="timeInfo">Son las 10:30 de la mañana</p>
                 </div>
-                <div class="user-badge" id="userBadge">Administrador</div>
-            </div>
+<div class="user-badge" id="fincaBadge" onclick="abrirSelectorFincas()" style="cursor: pointer;">
+    Cargando...
+</div>            </div>
         </div>
 
         <div id="alertContainer"></div>
@@ -1232,6 +1332,185 @@ let inventarioCache = null;
 let inventarioCacheTime = 0;
 const CACHE_DURATION = 60000; // 1 minuto
 
+// Variable global para almacenar fincas
+let fincasUsuario = [];
+let fincaActual = '';
+
+// Cargar fincas al iniciar
+async function cargarFincasUsuario() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/auth/mis-fincas`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            fincasUsuario = data.fincas;
+            fincaActual = data.fincaActiva;
+            actualizarBadgeFinca();
+        }
+    } catch (error) {
+        console.error('Error al cargar fincas:', error);
+    }
+}
+
+// Actualizar badge con nombre de finca
+function actualizarBadgeFinca() {
+    const badge = document.getElementById('fincaBadge');
+    badge.textContent = fincaActual || 'Sin Finca';
+    badge.style.cursor = 'pointer';
+}
+
+// Modal agregar finca
+function abrirModalAgregarFinca() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-fincas active';
+    modal.innerHTML = `
+        <div class="modal-fincas-content">
+            <div class="modal-header-fincas">
+                <h2>🏡 Agregar Nueva Finca</h2>
+                <p>Escribe el nombre de tu nueva finca</p>
+            </div>
+            <div class="form-group">
+                <label for="nombreNuevaFinca">Nombre de la Finca</label>
+                <input type="text" id="nombreNuevaFinca" placeholder="Ej: La Esperanza" 
+                       style="width: 100%; padding: 16px; font-size: 16px;">
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button onclick="cerrarModalAgregarFinca()" class="btn-primary" 
+                        style="flex: 1; background: #6b7280;">
+                    Cancelar
+                </button>
+                <button onclick="guardarNuevaFinca()" class="btn-primary" style="flex: 1;">
+                    ✅ Agregar Finca
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('nombreNuevaFinca').focus();
+}
+
+function cerrarModalAgregarFinca() {
+    const modal = document.querySelector('.modal-fincas');
+    if (modal) modal.remove();
+}
+
+async function guardarNuevaFinca() {
+    const nombreFinca = document.getElementById('nombreNuevaFinca').value.trim();
+    
+    if (!nombreFinca) {
+        showAlert('Por favor escribe un nombre para la finca', 'error');
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/auth/agregar-finca`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ nombreFinca })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(`✅ Finca "${nombreFinca}" agregada exitosamente`, 'success');
+            cerrarModalAgregarFinca();
+            await cargarFincasUsuario();
+        } else {
+            showAlert(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error al agregar finca', 'error');
+    }
+}
+
+// Selector de fincas
+function abrirSelectorFincas() {
+    if (fincasUsuario.length === 0) {
+        showAlert('No tienes fincas registradas', 'error');
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-fincas active';
+    
+    const fincasHTML = fincasUsuario.map(finca => `
+        <div class="finca-item ${finca.activa ? 'activa' : ''}" 
+             onclick="seleccionarFinca('${finca.nombre}')">
+            <div class="finca-nombre">🏡 ${finca.nombre}</div>
+            ${finca.activa ? '<span class="finca-badge">Activa</span>' : ''}
+        </div>
+    `).join('');
+    
+    modal.innerHTML = `
+        <div class="modal-fincas-content">
+            <div class="modal-header-fincas">
+                <h2>Selecciona una Finca</h2>
+                <p>Cambia entre tus fincas registradas</p>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                ${fincasHTML}
+            </div>
+            <button onclick="cerrarSelectorFincas()" class="btn-primary" 
+                    style="width: 100%; margin-top: 20px; background: #6b7280;">
+                Cerrar
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function cerrarSelectorFincas() {
+    const modal = document.querySelector('.modal-fincas');
+    if (modal) modal.remove();
+}
+
+async function seleccionarFinca(nombreFinca) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/auth/cambiar-finca`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ nombreFinca })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(`✅ Cambiado a finca: ${nombreFinca}`, 'success');
+            fincaActual = nombreFinca;
+            actualizarBadgeFinca();
+            cerrarSelectorFincas();
+            
+            // Recargar datos de la nueva finca
+            cargarGastos();
+            cargarEstadisticasGastos();
+        } else {
+            showAlert(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error al cambiar de finca', 'error');
+    }
+}
+
+// Modificar inicializarDashboard
+
+
 // Verificar autenticación
 window.addEventListener('load', () => {
     const token = localStorage.getItem('token');
@@ -1259,8 +1538,9 @@ function inicializarDashboard() {
     actualizarSaludo();
     actualizarHora();
     setInterval(actualizarHora, 60000);
+    cargarFincasUsuario(); 
     cargarGastos();
-    cargarEstadisticasGastos(); // Agregar esta línea
+    cargarEstadisticasGastos();
 }
 
 async function cargarEstadisticasGastos() {

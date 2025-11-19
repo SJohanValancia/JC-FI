@@ -236,4 +236,122 @@ router.get('/verificar', verificarToken, async (req, res) => {
   }
 });
 
+// Agregar finca
+router.post('/agregar-finca', verificarToken, async (req, res) => {
+  try {
+    const { nombreFinca } = req.body;
+    
+    if (!nombreFinca || nombreFinca.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'El nombre de la finca es requerido'
+      });
+    }
+    
+    const usuario = await User.findById(req.usuario.id);
+    
+    // Verificar si ya existe una finca con ese nombre
+    const fincaExiste = usuario.fincas.some(f => 
+      f.nombre.toLowerCase() === nombreFinca.toLowerCase().trim()
+    );
+    
+    if (fincaExiste) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ya tienes una finca con ese nombre'
+      });
+    }
+    
+    // Si es la primera finca, marcarla como activa
+    const esPrimeraFinca = usuario.fincas.length === 0;
+    
+    usuario.fincas.push({
+      nombre: nombreFinca.trim(),
+      activa: esPrimeraFinca
+    });
+    
+    if (esPrimeraFinca) {
+      usuario.fincaActiva = nombreFinca.trim();
+    }
+    
+    await usuario.save();
+    
+    res.json({
+      success: true,
+      message: 'Finca agregada exitosamente',
+      fincas: usuario.fincas,
+      fincaActiva: usuario.fincaActiva
+    });
+    
+  } catch (error) {
+    console.error('Error al agregar finca:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al agregar finca',
+      error: error.message
+    });
+  }
+});
+
+// Cambiar finca activa
+router.post('/cambiar-finca', verificarToken, async (req, res) => {
+  try {
+    const { nombreFinca } = req.body;
+    
+    const usuario = await User.findById(req.usuario.id);
+    
+    const fincaExiste = usuario.fincas.some(f => f.nombre === nombreFinca);
+    
+    if (!fincaExiste) {
+      return res.status(404).json({
+        success: false,
+        message: 'Finca no encontrada'
+      });
+    }
+    
+    // Desactivar todas las fincas
+    usuario.fincas.forEach(f => f.activa = false);
+    
+    // Activar la finca seleccionada
+    const fincaSeleccionada = usuario.fincas.find(f => f.nombre === nombreFinca);
+    fincaSeleccionada.activa = true;
+    usuario.fincaActiva = nombreFinca;
+    
+    await usuario.save();
+    
+    res.json({
+      success: true,
+      message: 'Finca cambiada exitosamente',
+      fincaActiva: usuario.fincaActiva
+    });
+    
+  } catch (error) {
+    console.error('Error al cambiar finca:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al cambiar finca'
+    });
+  }
+});
+
+// Obtener fincas del usuario
+router.get('/mis-fincas', verificarToken, async (req, res) => {
+  try {
+    const usuario = await User.findById(req.usuario.id).select('fincas fincaActiva');
+    
+    res.json({
+      success: true,
+      fincas: usuario.fincas,
+      fincaActiva: usuario.fincaActiva
+    });
+    
+  } catch (error) {
+    console.error('Error al obtener fincas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener fincas'
+    });
+  }
+});
+
 module.exports = router;

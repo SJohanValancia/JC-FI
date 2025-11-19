@@ -7,8 +7,10 @@ const { verificarToken } = require('../middleware/auth');
 // Obtener todos los gastos del usuario
 router.get('/', verificarToken, async (req, res) => {
   try {
-    const gastos = await Gasto.find({ usuario: req.usuario.id })
-      .populate('usuario', 'nombre usuario')
+const gastos = await Gasto.find({ 
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva  // 🔥 AGREGAR
+})      .populate('usuario', 'nombre usuario')
       .sort({ fechaCreacion: -1 });
     
     res.json({
@@ -92,7 +94,8 @@ router.post('/', verificarToken, async (req, res) => {
       valor,
       productosInventario: productosInventario || [],
       usuario: req.usuario.id,
-      usuarioNombre: req.usuario.usuario
+      usuarioNombre: req.usuario.usuario,
+      finca: req.usuario.fincaActiva
     });
     
     // Descontar del inventario
@@ -123,7 +126,10 @@ router.post('/', verificarToken, async (req, res) => {
 // Obtener estadísticas
 router.get('/stats/resumen', verificarToken, async (req, res) => {
   try {
-    const gastos = await Gasto.find({ usuario: req.usuario.id });
+    const gastos = await Gasto.find({ 
+  usuario: req.usuario.id,
+  finca: req.usuario.fincaActiva 
+});
     
     const stats = {
       totalGastos: gastos.length,
