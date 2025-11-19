@@ -1611,7 +1611,7 @@ function actualizarSaludo() {
     }
 
     document.getElementById('greeting').textContent = `${saludo}, ${userData.nombre}!`;
-    document.getElementById('userBadge').textContent = userData.rol.charAt(0).toUpperCase() + userData.rol.slice(1);
+    // ✅ YA NO NECESITAS ESTA LÍNEA porque el badge ahora muestra la finca, no el rol
 }
 
 function actualizarHora() {

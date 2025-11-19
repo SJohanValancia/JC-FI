@@ -28,13 +28,23 @@ router.post('/register', async (req, res) => {
     }
     
     // Crear nuevo usuario en programa principal
-    const nuevoUsuario = new User({
-      nombre: nombre.trim(),
-      usuario: usuario.toLowerCase().trim(),
-      password,
-      rol: rol || 'trabajador',
-      finca: finca || ''
-    });
+// Crear nuevo usuario en programa principal
+const nuevoUsuario = new User({
+  nombre: nombre.trim(),
+  usuario: usuario.toLowerCase().trim(),
+  password,
+  rol: rol || 'trabajador',
+  finca: finca || ''
+});
+
+// 🔥 Si se proporcionó una finca en el registro, agregarla al array de fincas
+if (finca && finca.trim() !== '') {
+  nuevoUsuario.fincas.push({
+    nombre: finca.trim(),
+    activa: true // Marcarla como activa por defecto
+  });
+  nuevoUsuario.fincaActiva = finca.trim();
+}
     
     await nuevoUsuario.save();
     
