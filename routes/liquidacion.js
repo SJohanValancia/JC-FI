@@ -5,13 +5,14 @@ const Gasto = require('../models/Gasto');
 const Inventario = require('../models/Inventario');
 const { verificarToken } = require('../middleware/auth');
 const axios = require('axios'); // Necesario para llamar a la otra API
+    const User = require('../models/User'); // Asegúrate de importar el modelo
+
 
 // 🔥 OBTENER RECOGIDAS SIN LIQUIDAR DE JC-FRUTAS
 // 🔥 OBTENER RECOGIDAS SIN LIQUIDAR DE JC-FRUTAS
 router.get('/recogidas-pendientes', verificarToken, async (req, res) => {
   try {
     const usuario = req.usuario.usuario;
-    const User = require('../models/User'); // Asegúrate de importar el modelo
     
     // Obtener la finca activa del usuario
     const usuarioData = await User.findById(req.usuario.id);
