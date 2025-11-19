@@ -109,12 +109,11 @@ router.get('/gastos-pendientes', verificarToken, async (req, res) => {
 });
 
 // 🔥 PROCESAR LIQUIDACIÓN COMPLETA
-// 🔥 PROCESAR LIQUIDACIÓN COMPLETA
 router.post('/procesar', verificarToken, async (req, res) => {
   try {
     const { 
       cajaInicial,
-      recogidasPagadas,
+      recogidasPagadas, // Array de IDs de recogidas que se pagaron
       ingresosAdicionales,
       gastosIds,
       notas
@@ -122,7 +121,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
     
     const User = require('../models/User');
     
-    // Obtener la finca activa del usuario
+    // 🔥 OBTENER LA FINCA ACTIVA DEL USUARIO
     const usuarioData = await User.findById(req.usuario.id);
     if (!usuarioData || !usuarioData.fincaActiva) {
       return res.status(400).json({
@@ -132,6 +131,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
     }
     
     const fincaActiva = usuarioData.fincaActiva;
+    console.log('🏡 Procesando liquidación para finca:', fincaActiva);
     
     if (!Array.isArray(recogidasPagadas) || !Array.isArray(gastosIds)) {
       return res.status(400).json({
@@ -140,22 +140,161 @@ router.post('/procesar', verificarToken, async (req, res) => {
       });
     }
     
-    // ... resto del código igual hasta crear la liquidación ...
+    // 1️⃣ Obtener información detallada de recogidas desde JC-Frutas
+    let recogidasDetalle = [];
+    let totalRecogidas = 0;
     
-    // 2️⃣ Obtener información de gastos - FILTRADO POR FINCA
+    if (recogidasPagadas.length > 0) {
+      try {
+        const responseRecogidas = await axios.post(
+          'https://jc-frutas.onrender.com/recogidas/obtener-multiples',
+          { ids: recogidasPagadas }
+        );
+        
+        // 🔥 FILTRAR SOLO RECOGIDAS DE LA FINCA ACTIVA
+        const recogidasFiltradas = responseRecogidas.data.filter(r => 
+          r.finca === fincaActiva
+        );
+        
+        if (recogidasFiltradas.length !== responseRecogidas.data.length) {
+          console.warn(`⚠️ Se filtraron ${responseRecogidas.data.length - recogidasFiltradas.length} recogidas de otras fincas`);
+        }
+        
+        recogidasDetalle = recogidasFiltradas.map(r => ({
+          recogidaId: r._id,
+          finca: r.finca,
+          fecha: r.fecha,
+          kilos: r.totalKilos,
+          valor: r.valorPagar
+        }));
+        
+        totalRecogidas = recogidasDetalle.reduce((sum, r) => sum + r.valor, 0);
+        console.log(`✅ Total recogidas de ${fincaActiva}: $${totalRecogidas}`);
+      } catch (error) {
+        console.error('Error al obtener recogidas:', error);
+      }
+    }
+    
+    // 2️⃣ Obtener información de gastos - 🔥 FILTRADO POR FINCA ACTIVA
     const gastos = await Gasto.find({ 
       _id: { $in: gastosIds },
       usuario: req.usuario.id,
-      finca: fincaActiva // 🔥 VERIFICACIÓN ADICIONAL
+      finca: fincaActiva // 🔥 FILTRO CRÍTICO
     });
     
-    // ... resto del código igual ...
+    // 🔥 VERIFICAR QUE TODOS LOS GASTOS PERTENEZCAN A LA FINCA ACTIVA
+    if (gastos.length !== gastosIds.length) {
+      console.warn(`⚠️ Se encontraron ${gastos.length} de ${gastosIds.length} gastos solicitados para la finca ${fincaActiva}`);
+    }
+    
+    let totalGastos = 0;
+    let gastosDetalle = [];
+    let inventarioDetalle = [];
+    
+    for (let gasto of gastos) {
+      totalGastos += gasto.valor;
+      
+      gastosDetalle.push({
+        gastoId: gasto._id,
+        descripcion: gasto.descripcion,
+        valor: gasto.valor,
+        finca: gasto.finca // 🔥 INCLUIR FINCA EN DETALLE
+      });
+      
+      // Calcular inventario usado
+      if (gasto.productosInventario && gasto.productosInventario.length > 0) {
+        for (let prod of gasto.productosInventario) {
+          const producto = await Inventario.findById(prod.inventarioId);
+          if (producto) {
+            const valorTotal = prod.cantidadUsada * producto.precio;
+            totalGastos += valorTotal;
+            
+            inventarioDetalle.push({
+              productoNombre: prod.nombre,
+              cantidad: prod.cantidadUsada,
+              valorUnitario: producto.precio,
+              valorTotal: valorTotal
+            });
+          }
+        }
+      }
+    }
+    
+    console.log(`💸 Total egresos de ${fincaActiva}: $${totalGastos}`);
+    
+    // 3️⃣ Calcular ingresos adicionales
+    const totalIngresosAdicionales = (ingresosAdicionales || []).reduce(
+      (sum, ing) => sum + (ing.valor || 0), 
+      0
+    );
+    
+    // 4️⃣ Crear liquidación - 🔥 INCLUIR FINCA
+    const liquidacion = new Liquidacion({
+      usuario: req.usuario.id,
+      usuarioNombre: req.usuario.usuario,
+      finca: fincaActiva, // 🔥 AGREGAR CAMPO FINCA
+      cajaInicial: cajaInicial || 0,
+      ingresoRecogidas: totalRecogidas,
+      ingresosAdicionales: ingresosAdicionales || [],
+      totalIngresosAdicionales: totalIngresosAdicionales,
+      totalEgresos: totalGastos,
+      recogidasLiquidadas: recogidasDetalle,
+      gastosLiquidados: gastosDetalle,
+      inventarioUsado: inventarioDetalle,
+      notas: notas || ''
+    });
+    
+    liquidacion.calcularTotales();
+    await liquidacion.save();
+    
+    console.log(`✅ Liquidación creada para finca ${fincaActiva}: ID ${liquidacion._id}`);
+    
+    // 5️⃣ Marcar gastos como liquidados
+    const resultGastos = await Gasto.updateMany(
+      { 
+        _id: { $in: gastosIds },
+        finca: fincaActiva // 🔥 VERIFICACIÓN ADICIONAL
+      },
+      { 
+        $set: { 
+          reciboDia: true,
+          fechaLiquidacion: new Date(),
+          liquidacionId: liquidacion._id
+        } 
+      }
+    );
+    
+    console.log(`✅ ${resultGastos.modifiedCount} gastos marcados como liquidados`);
+    
+    // 6️⃣ Marcar recogidas como liquidadas en JC-Frutas
+    if (recogidasPagadas.length > 0) {
+      try {
+        await axios.post(
+          'https://jc-frutas.onrender.com/recogidas/marcar-liquidadas',
+          { 
+            ids: recogidasPagadas,
+            liquidacionId: liquidacion._id.toString(),
+            finca: fincaActiva // 🔥 ENVIAR FINCA PARA VERIFICACIÓN
+          }
+        );
+        console.log(`✅ ${recogidasPagadas.length} recogidas marcadas como liquidadas en JC-Frutas`);
+      } catch (error) {
+        console.error('Error al marcar recogidas como liquidadas:', error);
+      }
+    }
     
     res.json({ 
       success: true, 
-      message: 'Liquidación procesada exitosamente',
+      message: `Liquidación procesada exitosamente para ${fincaActiva}`,
       liquidacion,
-      fincaActiva: fincaActiva
+      fincaActiva: fincaActiva,
+      resumen: {
+        totalRecogidas: recogidasDetalle.length,
+        totalGastos: gastos.length,
+        valorRecogidas: totalRecogidas,
+        valorGastos: totalGastos,
+        cajaFinal: liquidacion.cajaFinal
+      }
     });
     
   } catch (error) {
