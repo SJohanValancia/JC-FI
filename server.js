@@ -60,12 +60,15 @@ const authRoutes = require('./routes/auth');
 const gastosRoutes = require('./routes/gastos');
 const inventarioRoutes = require('./routes/inventario');
 const liquidacionRoutes = require('./routes/liquidacion'); // 🔥 AGREGADO
+const cultivosRoutes = require('./routes/cultivos');
+
 
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/gastos', gastosRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/liquidacion', liquidacionRoutes); // 🔥 CORREGIDO
+app.use('/api/cultivos', cultivosRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
