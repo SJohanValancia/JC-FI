@@ -2655,45 +2655,39 @@ async function loginAutomaticoFrutas() {
       throw new Error('No hay sesión activa');
     }
 
-    // Hacer login automático en JC-FRUTAS
-    const response = await fetch('https://jc-frutas.netlify.app/auth/login-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: usuario.usuario,
-        token: token
-      }),
-      credentials: 'include' // Importante para mantener la sesión
-    });
-
-    if (!response.ok) {
-      throw new Error('Error en login automático');
-    }
-
-    const data = await response.json();
-    console.log('✅ Login automático exitoso en JC-FRUTAS');
-    return data;
+    // ✅ CREAR DATOS DE SESIÓN COMPARTIDA
+    const sesionCompartida = {
+      token: token,
+      usuario: usuario.usuario,
+      nombre: usuario.nombre,
+      rol: usuario.rol,
+      tipo: usuario.tipo || 1,
+      alias: usuario.usuario
+    };
+    
+    // ✅ GUARDAR EN SESSIONSTORAGE ANTES DE ABRIR
+    sessionStorage.setItem('sesionCompartida', JSON.stringify(sesionCompartida));
+    
+    console.log('✅ Sesión compartida preparada:', sesionCompartida);
+    return sesionCompartida;
 
   } catch (error) {
-    console.error('❌ Error en login automático:', error);
+    console.error('❌ Error preparando sesión:', error);
     throw error;
   }
 }
 
-// 🔥 FUNCIÓN MEJORADA: Abrir Recogida de Frutas
+
 async function abrirRecogidaFrutas(event) {
   event.preventDefault();
   
   showAlert('Preparando sistema de frutas...', 'success');
   
   try {
-    // 1. Hacer login automático
-    await loginAutomaticoFrutas();
+    // 1. Preparar sesión
+    const sesionData = await loginAutomaticoFrutas();
     
-    // 2. Obtener datos del usuario
-    const token = localStorage.getItem('token');
+    // 2. Obtener usuario
     const usuario = JSON.parse(localStorage.getItem('usuario'));
     
     // 3. Obtener/seleccionar finca
@@ -2703,32 +2697,40 @@ async function abrirRecogidaFrutas(event) {
       return;
     }
     
-    // 4. Construir URL con parámetros
+    // 4. ✅ CONSTRUIR URL COMPLETA CON TODOS LOS PARÁMETROS
+    const baseUrl = 'https://jc-frutas.onrender.com/recogida.html';
     const params = new URLSearchParams({
       fincaId: finca.id,
-      finca: encodeURIComponent(finca.nombre),
-      propietario: encodeURIComponent(finca.propietario),
+      finca: finca.nombre,
+      propietario: finca.propietario,
       usuario: usuario.usuario,
       usuarioAlias: usuario.usuario,
       origenIntegracion: 'true',
-      autoLogin: 'true' // Indicador de que ya hicimos login
+      timestamp: Date.now() // ✅ Evitar caché
     });
     
-    // 5. Abrir en Modal con Netlify
+    const urlCompleta = `${baseUrl}?${params.toString()}`;
+    
+    console.log('📍 Abriendo URL:', urlCompleta);
+    
+    // 5. Abrir Modal
     const modal = document.getElementById('modalRecogidaFrutas');
     const iframe = document.getElementById('iframeRecogida');
     
-    iframe.src = `https://jc-frutas.netlify.app/recogida.html?${params.toString()}`;
-    modal.style.display = 'flex';
+    // ✅ LIMPIAR IFRAME ANTES DE CARGAR
+    iframe.src = 'about:blank';
     
-    showAlert('✅ Sistema de frutas cargado', 'success');
+    setTimeout(() => {
+      iframe.src = urlCompleta;
+      modal.style.display = 'flex';
+      showAlert('✅ Cargando sistema de frutas...', 'success');
+    }, 300);
     
   } catch (error) {
-    console.error('Error al abrir recogida de frutas:', error);
-    showAlert('Error al abrir sistema de frutas: ' + error.message, 'error');
+    console.error('Error al abrir recogida:', error);
+    showAlert('Error: ' + error.message, 'error');
   }
 }
-
 // 🔥 FUNCIÓN MEJORADA: Abrir Historial de Frutas
 async function abrirHistorialFrutas(event) {
   event.preventDefault();
@@ -2763,7 +2765,8 @@ async function abrirHistorialFrutas(event) {
     const modal = document.getElementById('modalHistorialFrutas');
     const iframe = document.getElementById('iframeHistorial');
     
-    iframe.src = `https://jc-frutas.netlify.app/historial.html?${params.toString()}`;
+    iframe.src = `https://jc-frutas.onrender.com/historial.html?${params.toString()}`;
+
     modal.style.display = 'flex';
     
     showAlert('✅ Historial cargado', 'success');
@@ -2810,7 +2813,8 @@ async function abrirGestionPrecios(event) {
     const modal = document.getElementById('modalGestionPrecios');
     const iframe = document.getElementById('iframePrecios');
     
-    iframe.src = `https://jc-frutas.netlify.app/precios.html?${params.toString()}`;
+    iframe.src = `https://jc-frutas.onrender.com/precios.html?${params.toString()}`;
+
     modal.style.display = 'flex';
     
     showAlert('✅ Gestión de precios cargada', 'success');
