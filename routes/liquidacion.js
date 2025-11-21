@@ -4,10 +4,66 @@ const Liquidacion = require('../models/Liquidacion');
 const Gasto = require('../models/Gasto');
 const Inventario = require('../models/Inventario');
 const { verificarToken } = require('../middleware/auth');
-const Entrada = require('../models/Entrada');
 const axios = require('axios'); // Necesario para llamar a la otra API
     const User = require('../models/User'); // Asegúrate de importar el modelo
 
+
+    const entradaSchema = new mongoose.Schema({
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  usuarioNombre: {
+    type: String,
+    required: true
+  },
+  finca: {
+    type: String,
+    required: true,
+    index: true
+  },
+  fechaEntrada: {
+    type: Date,
+    required: true,
+    index: true
+  },
+  descripcion: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 200
+  },
+  valor: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  fechaCreacion: {
+    type: Date,
+    default: Date.now,
+    index: true
+  },
+  ultimaModificacion: {
+    type: Date,
+    default: Date.now
+  },
+  liquidada: {
+    type: Boolean,
+    default: false
+  },
+  fechaLiquidacion: {
+    type: Date
+  },
+  liquidacionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Liquidacion'
+  }
+});
+
+entradaSchema.index({ usuario: 1, finca: 1, fechaEntrada: -1 });
+const Entrada = mongoose.model('Entrada', entradaSchema);
 
 router.get('/entradas-pendientes', verificarToken, async (req, res) => {
   try {
