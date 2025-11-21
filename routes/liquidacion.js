@@ -10,8 +10,7 @@ const mongoose = require('mongoose');
 const Entrada = require('../models/Entrada'); // ← AGREGAR ESTA LÍNEA
 
 
-entradaSchema.index({ usuario: 1, finca: 1, fechaEntrada: -1 });
-const Entrada = mongoose.model('Entrada', entradaSchema);
+
 
 router.get('/entradas-pendientes', verificarToken, async (req, res) => {
   try {
