@@ -2,13 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verificarToken } = require('../middleware/auth');
 const mongoose = require('mongoose');
-const Entrada = require('../models/Entrada'); // ← AGREGAR ESTA LÍNEA
-
-
-// Índice compuesto para búsquedas eficientes
-entradaSchema.index({ usuario: 1, finca: 1, fechaEntrada: -1 });
-
-const Entrada = mongoose.model('Entrada', entradaSchema);
+const Entrada = require('../models/Entrada');
 
 // 📌 CREAR ENTRADA
 router.post('/', verificarToken, async (req, res) => {
