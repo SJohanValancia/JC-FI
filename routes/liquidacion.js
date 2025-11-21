@@ -6,6 +6,8 @@ const Inventario = require('../models/Inventario');
 const { verificarToken } = require('../middleware/auth');
 const axios = require('axios'); // Necesario para llamar a la otra API
     const User = require('../models/User'); // Asegúrate de importar el modelo
+    const mongoose = require('mongoose'); // ← AGREGAR ESTA LÍNEA
+
 
 
     const entradaSchema = new mongoose.Schema({
