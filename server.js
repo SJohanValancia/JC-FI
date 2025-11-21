@@ -159,6 +159,7 @@ const gastosRoutes = require('./routes/gastos');
 const inventarioRoutes = require('./routes/inventario');
 const liquidacionRoutes = require('./routes/liquidacion');
 const cultivosRoutes = require('./routes/cultivos');
+const entradasRoutes = require('./routes/entradas');
 
 // ============================================
 // 🔥 USAR RUTAS
@@ -168,6 +169,7 @@ app.use('/api/gastos', gastosRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/liquidacion', liquidacionRoutes);
 app.use('/api/cultivos', cultivosRoutes);
+app.use('/api/entradas', entradasRoutes);
 
 // ============================================
 // 🔥 RUTAS DE UTILIDAD

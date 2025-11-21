@@ -1208,17 +1208,17 @@ select:hover {
     </a>
     
     <!-- 🔥 NUEVOS ENLACES - SISTEMA DE FRUTAS -->
-    <a href="#" class="menu-item" onclick="abrirRecogidaFrutas(event)">
+    <a style="display: none;" href="#" class="menu-item" onclick="abrirRecogidaFrutas(event)">
         <span class="menu-icon">🍎</span>
         <span>Nueva Recogida Frutas</span>
     </a>
-    <a href="#" class="menu-item" onclick="abrirHistorialFrutas(event)">
+    <a style="display: none;" href="#" class="menu-item" onclick="abrirHistorialFrutas(event)">
         <span class="menu-icon">📋</span>
         <span>Historial recogidas</span>
     </a>
 
     <!-- Después del enlace de Historial Frutas -->
-<a href="#" class="menu-item" onclick="abrirGestionPrecios(event)">
+<a style="display: none;" href="#" class="menu-item" onclick="abrirGestionPrecios(event)">
     <span class="menu-icon">💰</span>
     <span>Gestión de Precios</span>
 </a>
@@ -2678,152 +2678,174 @@ async function loginAutomaticoFrutas() {
 }
 
 
+// 🔥 FUNCIÓN MODIFICADA: Usar Finca Activa sin Preguntar
+// 🔥 FUNCIÓN AUXILIAR PARA OBTENER DATOS DE LA FINCA (EVITA REPETIR CÓDIGO)
+async function obtenerDatosFinca() {
+  const usuario = JSON.parse(localStorage.getItem('usuario'));
+  
+  if (!usuario?.usuario) {
+    throw new Error('No hay sesión de usuario activa');
+  }
+  
+  if (!fincaActual || fincaActual === 'Sin Finca') {
+    throw new Error('No tienes una finca activa. Selecciona una finca desde el badge superior.');
+  }
+  
+  const response = await fetch(`https://jc-frutas.onrender.com/fincas/por-admin/${usuario.usuario}`, {
+    headers: { 'Content-Type': 'application/json' }
+  });
+  
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar las fincas desde JC-Frutas');
+  }
+  
+  const fincas = await response.json();
+  const fincaData = fincas.find(f => f.nombre === fincaActual);
+  
+  if (!fincaData) {
+    throw new Error(`La finca "${fincaActual}" no existe en JC-Frutas`);
+  }
+  
+  return { fincaData, usuario: usuario.usuario };
+}
+
+// 🔥 FUNCIÓN CORREGIDA: Nueva Recogida Frutas
 async function abrirRecogidaFrutas(event) {
   event.preventDefault();
-  
   showAlert('Preparando sistema de frutas...', 'success');
-  
+
   try {
-    // 1. Preparar sesión
-    const sesionData = await loginAutomaticoFrutas();
-    
-    // 2. Obtener usuario
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-    
-    // 3. Obtener/seleccionar finca
-    const finca = await obtenerFincaSeleccionada();
-    if (!finca) {
-      showAlert('Operación cancelada', 'error');
-      return;
-    }
-    
-    // 4. ✅ CONSTRUIR URL COMPLETA CON TODOS LOS PARÁMETROS
-    const baseUrl = 'https://jc-frutas.onrender.com/recogida.html';
+    // 1. Obtener datos de sesión actuales
+    const token = localStorage.getItem('token');
+    const { fincaData, usuario } = await obtenerDatosFinca();
+
+    // 2. Construir URL con token y datos de sesión (MÉTODO SEGURO)
     const params = new URLSearchParams({
-      fincaId: finca.id,
-      finca: finca.nombre,
-      propietario: finca.propietario,
-      usuario: usuario.usuario,
-      usuarioAlias: usuario.usuario,
+      fincaId: fincaData._id,
+      finca: encodeURIComponent(fincaData.nombre),
+      propietario: encodeURIComponent(fincaData.propietario),
+      usuario: usuario,
+      usuarioAlias: usuario,
+      token: token, // 🔥 TOKEN DIRECTO EN LA URL
+      rol: JSON.parse(localStorage.getItem('usuario')).rol,
+      nombre: JSON.parse(localStorage.getItem('usuario')).nombre,
       origenIntegracion: 'true',
-      timestamp: Date.now() // ✅ Evitar caché
+      timestamp: Date.now()
     });
-    
-    const urlCompleta = `${baseUrl}?${params.toString()}`;
-    
-    console.log('📍 Abriendo URL:', urlCompleta);
-    
-    // 5. Abrir Modal
+
+    const urlCompleta = `https://jc-frutas.onrender.com/recogida.html?${params.toString()}`;
+    console.log('📍 Abriendo recogida frutas con token en URL');
+
+    // 3. Configurar y mostrar modal
     const modal = document.getElementById('modalRecogidaFrutas');
     const iframe = document.getElementById('iframeRecogida');
     
-    // ✅ LIMPIAR IFRAME ANTES DE CARGAR
+    if (!modal || !iframe) {
+      throw new Error('Elementos del modal no encontrados');
+    }
+
+    // Limpiar iframe y cargar nueva URL
     iframe.src = 'about:blank';
-    
     setTimeout(() => {
       iframe.src = urlCompleta;
       modal.style.display = 'flex';
-      showAlert('✅ Cargando sistema de frutas...', 'success');
-    }, 300);
-    
+      showAlert(`✅ Abriendo recogida en: ${fincaActual}`, 'success');
+    }, 200);
+
   } catch (error) {
-    console.error('Error al abrir recogida:', error);
-    showAlert('Error: ' + error.message, 'error');
+    console.error('❌ Error al abrir recogida:', error);
+    showAlert(error.message || 'Error al cargar el sistema de frutas', 'error');
   }
 }
-// 🔥 FUNCIÓN MEJORADA: Abrir Historial de Frutas
+
+// 🔥 FUNCIÓN CORREGIDA: Historial de Recogidas
 async function abrirHistorialFrutas(event) {
   event.preventDefault();
-  
   showAlert('Cargando historial de frutas...', 'success');
-  
+
   try {
-    // 1. Hacer login automático
-    await loginAutomaticoFrutas();
-    
-    // 2. Obtener datos
+    // 1. Obtener datos de sesión
     const token = localStorage.getItem('token');
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-    
-    // 3. Obtener finca
-    const finca = await obtenerFincaSeleccionada();
-    if (!finca) {
-      showAlert('Operación cancelada', 'error');
-      return;
-    }
-    
-    // 4. Construir URL
+    const { fincaData, usuario } = await obtenerDatosFinca();
+
+    // 2. Construir URL con parámetros necesarios
     const params = new URLSearchParams({
-      id: finca.id,
-      finca: encodeURIComponent(finca.nombre),
-      usuario: usuario.usuario,
+      id: fincaData._id,
+      finca: encodeURIComponent(fincaData.nombre),
+      usuario: usuario,
+      token: token, // 🔥 TOKEN NECESARIO PARA AUTENTICACIÓN
+      rol: JSON.parse(localStorage.getItem('usuario')).rol,
       origenIntegracion: 'true',
-      autoLogin: 'true'
+      autoLogin: 'true',
+      timestamp: Date.now()
     });
-    
-    // 5. Abrir modal con Netlify
+
+    const urlCompleta = `https://jc-frutas.onrender.com/historial.html?${params.toString()}`;
+
+    // 3. Configurar modal
     const modal = document.getElementById('modalHistorialFrutas');
     const iframe = document.getElementById('iframeHistorial');
     
-    iframe.src = `https://jc-frutas.onrender.com/historial.html?${params.toString()}`;
+    if (!modal || !iframe) {
+      throw new Error('Elementos del modal no encontrados');
+    }
 
+    iframe.src = urlCompleta;
     modal.style.display = 'flex';
-    
-    showAlert('✅ Historial cargado', 'success');
-    
+    showAlert(`✅ Historial de: ${fincaActual}`, 'success');
+
   } catch (error) {
-    console.error('Error al abrir historial:', error);
-    showAlert('Error al abrir historial: ' + error.message, 'error');
+    console.error('❌ Error al abrir historial:', error);
+    showAlert(error.message || 'Error al cargar el historial', 'error');
   }
 }
 
-// 🔥 FUNCIÓN MEJORADA: Abrir Gestión de Precios
+// 🔥 FUNCIÓN CORREGIDA: Gestión de Precios
 async function abrirGestionPrecios(event) {
   event.preventDefault();
-  
   showAlert('Preparando gestión de precios...', 'success');
-  
+
   try {
-    // 1. Hacer login automático
-    await loginAutomaticoFrutas();
-    
-    // 2. Obtener datos
+    // 1. Obtener datos de sesión
     const token = localStorage.getItem('token');
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-    
-    // 3. Obtener finca
-    const finca = await obtenerFincaSeleccionada();
-    if (!finca) {
-      showAlert('Operación cancelada', 'error');
-      return;
-    }
-    
-    // 4. Construir URL
+    const { fincaData, usuario } = await obtenerDatosFinca();
+
+    // 2. Construir URL completa
     const params = new URLSearchParams({
-      id: finca.id,
-      finca: encodeURIComponent(finca.nombre),
-      propietario: encodeURIComponent(finca.propietario),
-      usuario: usuario.usuario,
-      usuarioAlias: usuario.usuario,
+      id: fincaData._id,
+      finca: encodeURIComponent(fincaData.nombre),
+      propietario: encodeURIComponent(fincaData.propietario),
+      usuario: usuario,
+      usuarioAlias: usuario,
+      token: token, // 🔥 TOKEN PARA AUTENTICACIÓN
+      rol: JSON.parse(localStorage.getItem('usuario')).rol,
+      nombre: JSON.parse(localStorage.getItem('usuario')).nombre,
       origenIntegracion: 'true',
-      autoLogin: 'true'
+      autoLogin: 'true',
+      timestamp: Date.now()
     });
-    
-    // 5. Abrir modal con Netlify
+
+    const urlCompleta = `https://jc-frutas.onrender.com/precios.html?${params.toString()}`;
+
+    // 3. Configurar modal
     const modal = document.getElementById('modalGestionPrecios');
     const iframe = document.getElementById('iframePrecios');
     
-    iframe.src = `https://jc-frutas.onrender.com/precios.html?${params.toString()}`;
+    if (!modal || !iframe) {
+      throw new Error('Elementos del modal no encontrados');
+    }
 
+    iframe.src = urlCompleta;
     modal.style.display = 'flex';
-    
-    showAlert('✅ Gestión de precios cargada', 'success');
-    
+    showAlert(`✅ Precios de: ${fincaActual}`, 'success');
+
   } catch (error) {
-    console.error('Error al abrir gestión de precios:', error);
-    showAlert('Error al abrir gestión de precios: ' + error.message, 'error');
+    console.error('❌ Error al abrir gestión de precios:', error);
+    showAlert(error.message || 'Error al cargar gestión de precios', 'error');
   }
 }
+
+
 // 🔥 FUNCIONES PARA CERRAR MODALES
 function cerrarModalRecogida() {
   const modal = document.getElementById('modalRecogidaFrutas');
@@ -2903,12 +2925,13 @@ window.cerrarModalPrecios = cerrarModalPrecios;
     <button onclick="cerrarModalRecogida()" style="position: absolute; top: 30px; right: 30px; background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; z-index: 20001; font-size: 16px;">
       ✖ Cerrar
     </button>
-    <iframe 
-      id="iframeRecogida" 
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
-      style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
-      frameborder="0"
-    ></iframe>
+<iframe 
+  id="iframeRecogida" 
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation"
+  allow="storage-access-by-user-activation"
+  style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
+  frameborder="0"
+></iframe>
   </div>
 </div>
 
@@ -2918,11 +2941,13 @@ window.cerrarModalPrecios = cerrarModalPrecios;
     <button onclick="cerrarModalHistorial()" style="position: absolute; top: 30px; right: 30px; background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; z-index: 20001; font-size: 16px;">
       ✖ Cerrar
     </button>
-    <iframe 
-      id="iframeHistorial" 
-      style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
-      frameborder="0"
-    ></iframe>
+<iframe 
+  id="iframeHistorial" 
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation"
+  allow="storage-access-by-user-activation"
+  style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
+  frameborder="0"
+></iframe>
   </div>
 </div>
 
@@ -2932,12 +2957,13 @@ window.cerrarModalPrecios = cerrarModalPrecios;
     <button onclick="cerrarModalPrecios()" style="position: absolute; top: 30px; right: 30px; background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; z-index: 20001; font-size: 16px;">
       ✖ Cerrar
     </button>
-    <iframe 
-      id="iframePrecios" 
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
-      style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
-      frameborder="0"
-    ></iframe>
+<iframe 
+  id="iframePrecios" 
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation"
+  allow="storage-access-by-user-activation"
+  style="width: 100%; height: 100%; border: none; border-radius: 10px;" 
+  frameborder="0"
+></iframe>
   </div>
 </div>
 </body>

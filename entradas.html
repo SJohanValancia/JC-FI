@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entradas de Dinero - Sistema de Fincas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4a7c2c;
+            --primary-dark: #2d5016;
+            --primary-light: #6b9d4a;
+            --secondary: #8bc34a;
+            --success: #10b981;
+            --bg-light: #f5f7f5;
+            --bg-white: #ffffff;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 280px;
+            background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+            padding: 30px 20px;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 4px 0 20px var(--shadow-lg);
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-logo {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .sidebar-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 20px;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding: 15px 20px;
+            background: rgba(220, 38, 38, 0.2);
+            border: 2px solid rgba(220, 38, 38, 0.4);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 38, 38, 0.3);
+            transform: scale(1.02);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-white);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .greeting {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+
+        .user-badge {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            cursor: pointer;
+        }
+
+        .time-info {
+            color: var(--text-light);
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--success), #059669);
+            padding: 25px;
+            border-radius: 16px;
+            color: white;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            animation: scaleIn 0.5s ease;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stat-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Card Container */
+        .card {
+            background: var(--bg-white);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: var(--text-dark);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: var(--bg-light);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--success);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Entrada Cards Grid */
+        .entradas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .entrada-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            border-left: 5px solid var(--success);
+            box-shadow: 0 4px 15px var(--shadow);
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .entrada-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-lg);
+        }
+
+        .entrada-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .entrada-description {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 5px;
+        }
+
+        .entrada-amount {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--success);
+            margin: 10px 0;
+        }
+
+        .entrada-date {
+            color: var(--text-light);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-edit, .btn-delete {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        /* Alert */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            animation: slideDown 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--success);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .greeting {
+                font-size: 24px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .entradas-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-top {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+
+
+        /* Animaciones mejoradas */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Efectos de hover mejorados */
+input:focus, select:focus {
+    transform: scale(1.01);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
+}
+
+.entrada-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.entrada-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.entrada-card:hover::before {
+    left: 100%;
+}
+
+/* Animación de éxito */
+@keyframes successPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.btn-primary:active {
+    animation: successPulse 0.6s ease;
+}
+
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">🌾</div>
+            <div class="sidebar-title">JC-Fi</div>
+        </div>
+
+        <nav>
+            <a href="dashboard.html" class="menu-item">
+                <span class="menu-icon">💰</span>
+                <span>Gastos</span>
+            </a>
+            <a href="inventario.html" class="menu-item">
+                <span class="menu-icon">📦</span>
+                <span>Inventario</span>
+            </a>
+            <a href="entradas.html" class="menu-item active">
+                <span class="menu-icon">💵</span>
+                <span>Entradas de Dinero</span>
+            </a>
+            <a href="historial-entradas.html" class="menu-item">
+                <span class="menu-icon">📊</span>
+                <span>Historial de Entradas</span>
+            </a>
+            <a href="liquidacion-diaria.html" class="menu-item">
+                <span class="menu-icon">💰</span>
+                <span>Liquidación Diaria</span>
+            </a>
+            <a href="historial-liquidaciones.html" class="menu-item">
+                <span class="menu-icon">📋</span>
+                <span>Historial Liquidaciones</span>
+            </a>
+            <a href="cultivos.html" class="menu-item">
+                <span class="menu-icon">🌾</span>
+                <span>Gestión de Cultivos</span>
+            </a>
+            <a href="historial-cultivos.html" class="menu-item">
+                <span class="menu-icon">📊</span>
+                <span>Historial de Cultivos</span>
+            </a>
+        </nav>
+
+        <button class="logout-btn" onclick="cerrarSesion()">
+            🚪 Cerrar Sesión
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <div>
+                    <h1 class="greeting" id="greeting">¡Bienvenido!</h1>
+                    <p class="time-info" id="timeInfo">Gestiona tus entradas de dinero</p>
+                </div>
+                <div class="user-badge" id="fincaBadge" onclick="window.location.href='dashboard.html'">
+                    Cargando...
+                </div>
+            </div>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="totalEntradas">0</div>
+                <div class="stat-label">Total Entradas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💵</div>
+                <div class="stat-value" id="totalDinero">$0</div>
+                <div class="stat-label">Valor Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value" id="promedio">$0</div>
+                <div class="stat-label">Promedio</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value" id="masAlta">$0</div>
+                <div class="stat-label">Entrada Más Alta</div>
+            </div>
+        </div>
+
+        <!-- Formulario de Entrada -->
+<!-- Reemplaza la sección del formulario por esto: -->
+<div class="card" style="animation: slideInUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
+    <h2 class="card-title">
+        <span style="font-size: 32px;">💵</span>
+        <span style="background: linear-gradient(135deg, var(--success), #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Registrar Entrada de Dinero
+        </span>
+    </h2>
+
+    <form id="formEntrada">
+        <div class="form-group">
+            <label for="fechaEntrada">
+                📅 Fecha de la Entrada *
+                <span style="font-size: 11px; color: var(--text-light); font-weight: 400;">(No puede ser mayor a hoy)</span>
+            </label>
+            <input type="date" id="fechaEntrada" required 
+                   max="" 
+                   value=""
+                   style="transition: all 0.3s ease;">
+        </div>
+
+        <div class="form-group">
+            <label for="descripcion">📝 Descripción de la Entrada *</label>
+            <input type="text" id="descripcion" 
+                   placeholder="Ej: Venta de café, Venta de aguacate..." 
+                   required
+                   style="transition: all 0.3s ease;"
+                   maxlength="100">
+            <div style="text-align: right; font-size: 12px; color: var(--text-light); margin-top: 5px;">
+                <span id="contadorCaracteres">0</span>/100 caracteres
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="valor">💰 Valor ($) *</label>
+            <input type="number" id="valor" 
+                   placeholder="Ej: 500000" 
+                   min="0" 
+                   step="0.01" 
+                   required
+                   style="transition: all 0.3s ease;">
+            <div id="valorFormateado" style="margin-top: 8px; font-size: 14px; color: var(--success); font-weight: 600;"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="saveBtn" style="width: 100%; position: relative; overflow: hidden;">
+            <span id="btnText">💾 Guardar Entrada</span>
+            <span id="btnLoader" style="display: none;">
+                <div class="spinner" style="width: 20px; height: 20px; display: inline-block; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white;"></div>
+            </span>
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: var(--text-light);">Guardando entrada...</p>
+        </div>
+    </form>
+</div>
+
+    <!-- Lista de Entradas -->
+    <div class="card">
+        <h2 class="card-title">
+            <span>📋</span>
+            Entradas Registradas
+        </h2>
+        <div id="entradasList" class="entradas-grid">
+            <div class="empty-state">
+                <div class="empty-icon">💵</div>
+                <p class="empty-text">No hay entradas registradas</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const API_URL = 'https://jc-fi.onrender.com/api';
+    let userData = null;
+    let editingEntradaId = null;
+    let fincaActual = '';
+
+    // Inicializar
+    window.addEventListener('load', () => {
+        const token = localStorage.getItem('token');
+        const usuario = localStorage.getItem('usuario');
+
+        if (!token || !usuario) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        userData = JSON.parse(usuario);
+        inicializarPagina();
+    });
+
+    function inicializarPagina() {
+        // Configurar fecha máxima y valor por defecto
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaEntrada').max = hoy;
+        document.getElementById('fechaEntrada').value = hoy;
+
+        actualizarSaludo();
+        cargarFincaActual();
+        cargarEntradas();
+        cargarEstadisticas();
+
+        // Event listeners
+        document.getElementById('formEntrada').addEventListener('submit', guardarEntrada);
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    }
+
+    function actualizarSaludo() {
+        const hora = new Date().getHours();
+        let saludo = '';
+
+        if (hora >= 5 && hora < 12) {
+            saludo = '¡Buenos días';
+        } else if (hora >= 12 && hora < 19) {
+            saludo = '¡Buenas tardes';
+        } else {
+            saludo = '¡Buenas noches';
+        }
+
+        document.getElementById('greeting').textContent = `${saludo}, ${userData.nombre}!`;
+    }
+
+    async function cargarFincaActual() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/auth/mis-fincas`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                fincaActual = data.fincaActiva;
+                document.getElementById('fincaBadge').textContent = fincaActual || 'Sin Finca';
+            }
+        } catch (error) {
+            console.error('Error al cargar finca:', error);
+        }
+    }
+
+async function guardarEntrada(e) {
+    e.preventDefault();
+
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // Mostrar loader en el botón
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline-block';
+    saveBtn.disabled = true;
+
+        if (!fechaEntrada || !descripcion || !valor || valor <= 0) {
+            showAlert('Por favor completa todos los campos correctamente', 'error');
+            return;
+        }
+
+        const loading = document.getElementById('loading');
+        
+        loading.classList.add('active');
+        saveBtn.disabled = true;
+
+        try {
+            const token = localStorage.getItem('token');
+            const url = editingEntradaId 
+                ? `${API_URL}/entradas/${editingEntradaId}`
+                : `${API_URL}/entradas`;
+            
+            const method = editingEntradaId ? 'PUT' : 'POST';
+
+            // Corregir zona horaria
+            const fechaLocal = new Date(fechaEntrada + 'T12:00:00');
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fechaEntrada: fechaLocal.toISOString(),
+                    descripcion,
+                    valor
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(
+                    editingEntradaId 
+                        ? '✅ Entrada actualizada exitosamente' 
+                        : '✅ Entrada registrada exitosamente', 
+                    'success'
+                );
+                
+                // Limpiar formulario
+                document.getElementById('formEntrada').reset();
+                const hoy = new Date().toISOString().split('T')[0];
+                document.getElementById('fechaEntrada').value = hoy;
+                
+                editingEntradaId = null;
+                saveBtn.textContent = '💾 Guardar Entrada';
+
+                // Recargar datos
+                cargarEntradas();
+                cargarEstadisticas();
+            } else {
+                showAlert(data.message || 'Error al guardar entrada', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error de conexión al guardar entrada', 'error');
+        } finally {
+            loading.classList.remove('active');
+            saveBtn.disabled = false;
+        }
+
+            // Al final, restaurar botón
+    setTimeout(() => {
+        btnText.style.display = 'inline';
+        btnLoader.style.display = 'none';
+        saveBtn.disabled = false;
+    }, 500);
+
+
+    }
+
+    async function cargarEntradas() {
+        const container = document.getElementById('entradasList');
+        const loading = document.getElementById('loading');
+
+        loading.classList.add('active');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/entradas`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const entradas = data.entradas;
+
+                if (entradas.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">💵</div>
+                            <p class="empty-text">No hay entradas registradas</p>
+                        </div>
+                    `;
+                    loading.classList.remove('active');
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                
+                entradas.forEach(entrada => {
+                    const fechaEntrada = new Date(entrada.fechaEntrada);
+                    const fechaCreacion = new Date(entrada.fechaCreacion);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'entrada-card';
+                    
+                    card.innerHTML = `
+                        <div class="entrada-card-header">
+                            <div>
+                                <div class="entrada-description">${entrada.descripcion}</div>
+                                <div class="entrada-date">
+                                    📅 ${fechaEntrada.toLocaleDateString('es-CO', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric',
+                                        timeZone: 'America/Bogota'
+                                    })}
+                                </div>
+                                <div class="entrada-date" style="margin-top: 5px; font-size: 12px;">
+                                    🕐 Registrado: ${fechaCreacion.toLocaleDateString('es-CO', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        timeZone: 'America/Bogota'
+                                    })} - ${fechaCreacion.toLocaleTimeString('es-CO', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        timeZone: 'America/Bogota'
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="entrada-amount">$${entrada.valor.toLocaleString('es-CO')}</div>
+                        <div class="entrada-date" style="margin-top: 10px;">
+                            👤 Registrado por: ${entrada.usuarioNombre}
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button onclick="editarEntrada('${entrada._id}')" class="btn-edit">
+                                ✏️ Editar
+                            </button>
+                            <button onclick="eliminarEntrada('${entrada._id}')" class="btn-delete">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    `;
+                    fragment.appendChild(card);
+                });
+                
+                container.innerHTML = '';
+                container.appendChild(fragment);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al cargar entradas', 'error');
+        } finally {
+            loading.classList.remove('active');
+        }
+    }
+
+    async function cargarEstadisticas() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/entradas/stats/resumen`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const stats = data.stats;
+                document.getElementById('totalEntradas').textContent = stats.totalEntradas;
+                document.getElementById('totalDinero').textContent = '$' + stats.totalValor.toLocaleString('es-CO');
+                document.getElementById('promedio').textContent = '$' + Math.round(stats.promedio).toLocaleString('es-CO');
+                document.getElementById('masAlta').textContent = '$' + stats.entradaMasAlta.toLocaleString('es-CO');
+            }
+        } catch (error) {
+            console.error('Error al cargar estadísticas:', error);
+        }
+    }
+
+    async function editarEntrada(id) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/entradas/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const entrada = data.entrada;
+                editingEntradaId = id;
+
+                // Convertir fecha correctamente
+                const fecha = new Date(entrada.fechaEntrada);
+                const fechaLocal = fecha.toISOString().split('T')[0];
+
+                document.getElementById('fechaEntrada').value = fechaLocal;
+                document.getElementById('descripcion').value = entrada.descripcion;
+                document.getElementById('valor').value = entrada.valor;
+                
+                const saveBtn = document.getElementById('saveBtn');
+                saveBtn.textContent = '💾 Actualizar Entrada';
+
+                document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+                showAlert('Editando entrada. Modifica los campos y guarda', 'success');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error al cargar entrada para editar', 'error');
+        }
+    }
+
+async function eliminarEntrada(id) {
+    const confirmacion = confirm('¿Estás seguro de que quieres eliminar esta entrada?\n\nEsta acción no se puede deshacer.');
+    
+    if (!confirmacion) return;
+
+    // Animar la tarjeta antes de eliminar
+    const cards = document.querySelectorAll('.entrada-card');
+    cards.forEach(card => {
+        if (card.querySelector(`[onclick*="${id}"]`)) {
+            card.style.animation = 'slideOut 0.4s ease forwards';
+        }
+    });
+
+    setTimeout(async () => {
+        const loading = document.getElementById('loading');
+        loading.classList.add('active');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/entradas/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('✅ Entrada eliminada exitosamente', 'success');
+                cargarEntradas();
+                cargarEstadisticas();
+            } else {
+                showAlert(data.message || 'Error al eliminar entrada', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error de conexión al eliminar entrada', 'error');
+        } finally {
+            loading.classList.remove('active');
+        }
+    }, 400);
+}
+
+// Agregar animación slideOut
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideOut {
+        to {
+            opacity: 0;
+            transform: translateX(-100px);
+        }
+    }
+`;
+document.head.appendChild(style);
+    function showAlert(message, type) {
+        const container = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            <span>${type === 'success' ? '✅' : '⚠️'}</span>
+            <span>${message}</span>
+        `;
+        container.innerHTML = '';
+        container.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    function cerrarSesion() {
+        if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            showAlert('Sesión cerrada exitosamente', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+    }
+
+
+    // Contador de caracteres
+document.getElementById('descripcion').addEventListener('input', function() {
+    const contador = document.getElementById('contadorCaracteres');
+    contador.textContent = this.value.length;
+    
+    if (this.value.length > 80) {
+        contador.style.color = '#ef4444';
+    } else {
+        contador.style.color = 'var(--text-light)';
+    }
+});
+
+// Formatear valor en tiempo real
+document.getElementById('valor').addEventListener('input', function() {
+    const valor = parseFloat(this.value) || 0;
+    const formateado = document.getElementById('valorFormateado');
+    
+    if (valor > 0) {
+        formateado.textContent = `💰 ${valor.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}`;
+        formateado.style.display = 'block';
+    } else {
+        formateado.style.display = 'none';
+    }
+});
+    </script>
+</body>
+</html>
+    
