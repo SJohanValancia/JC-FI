@@ -511,6 +511,69 @@
                 margin-bottom: 20px;
             }
         }
+
+        .movimiento-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.movimiento-item.ingreso {background: rgba(40, 167, 69, 0.1);
+    border-left-color: var(--success);
+}
+
+.movimiento-item.retiro {
+    background: rgba(220, 53, 69, 0.1);
+    border-left-color: var(--danger);
+}
+
+.movimiento-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px var(--shadow);
+}
+
+.movimiento-info {
+    flex: 1;
+}
+
+.movimiento-tipo {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.movimiento-desc {
+    font-size: 13px;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.movimiento-fecha {
+    font-size: 11px;
+    color: var(--text-light);
+}
+
+.movimiento-valor {
+    font-size: 20px;
+    font-weight: 800;
+    margin-left: 15px;
+}
+
+.movimiento-valor.positivo {
+    color: var(--success);
+}
+
+.movimiento-valor.negativo {
+    color: var(--danger);
+}
+
+
     </style>
 </head>
 <body>
@@ -575,11 +638,18 @@
             <div class="resumen-total">
                 <h2 style="margin-bottom: 30px; font-size: 28px;">📊 Resumen Total</h2>
 
-                <div class="form-group" style="margin-bottom: 30px;">
-                    <label style="color: rgba(255,255,255,0.9); margin-bottom: 10px; display: block;">Caja Inicial del Día ($)</label>
-                    <input type="number" id="cajaInicial" class="caja-inicial-input" placeholder="Ingresa el valor inicial" min="0" value="0" onchange="calcularResumen()">
-                </div>
-
+<div class="form-group" style="margin-bottom: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <label style="color: rgba(255,255,255,0.9); margin: 0;">Caja Inicial del Día ($)</label>
+        <button onclick="abrirControlCaja()" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.4); padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            💰 Control de Caja
+        </button>
+    </div>
+    <input type="number" id="cajaInicial" class="caja-inicial-input" placeholder="Se carga automáticamente de la última liquidación" min="0" value="0" onchange="calcularResumen()" readonly style="cursor: not-allowed; opacity: 0.8;">
+    <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 8px;">
+        ℹ️ La caja inicial se actualiza automáticamente con la caja final de la última liquidación y los movimientos registrados
+    </div>
+</div>
                 <div class="resumen-item">
                     <span class="resumen-label">💰 Caja Inicial:</span>
                     <span class="resumen-valor" id="resumenCajaInicial">$0</span>
@@ -619,50 +689,72 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = 'https://jc-fi.onrender.com/api';
-        
-        let recogidasPendientes = [];
-        let recogidasPagadas = new Set();
-        let ingresosAdicionales = [];
-        let gastosPendientes = [];
-        let userData = null;
+<script>
+const API_URL = 'https://jc-fi.onrender.com/api';
 
-        // Verificar autenticación
-        window.addEventListener('load', () => {
-            const token = localStorage.getItem('token');
-            const usuario = localStorage.getItem('usuario');
+let entradasPendientes = [];
+let recogidasPagadas = new Set();
+let ingresosAdicionales = [];
+let gastosPendientes = [];
+let userData = null;
+let cajaActualGlobal = 0;
 
-            if (!token || !usuario) {
-                window.location.href = 'index.html';
-                return;
+// Verificar autenticación
+window.addEventListener('load', () => {
+    const token = localStorage.getItem('token');
+    const usuario = localStorage.getItem('usuario');
+
+    if (!token || !usuario) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    userData = JSON.parse(usuario);
+    inicializarLiquidacion();
+});
+
+async function inicializarLiquidacion() {
+    mostrarFechaActual();
+    await cargarCajaActual();
+    await cargarEntradasPendientes();
+    await cargarGastosPendientes();
+    calcularResumen();
+}
+
+function mostrarFechaActual() {
+    const fecha = new Date();
+    const opciones = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    document.getElementById('fechaActual').textContent = 
+        `Liquidación del ${fecha.toLocaleDateString('es-CO', opciones)}`;
+}
+
+// 🔥 CARGAR CAJA ACTUAL
+async function cargarCajaActual() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/liquidacion/caja-actual`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
-
-            userData = JSON.parse(usuario);
-            inicializarLiquidacion();
         });
 
-        async function inicializarLiquidacion() {
-            mostrarFechaActual();
-            await cargarEntradasPendientes();
-            await cargarGastosPendientes();
+        const data = await response.json();
+
+        if (data.success) {
+            cajaActualGlobal = data.cajaActual || 0;
+            document.getElementById('cajaInicial').value = cajaActualGlobal;
             calcularResumen();
         }
+    } catch (error) {
+        console.error('Error al cargar caja actual:', error);
+    }
+}
 
-        function mostrarFechaActual() {
-            const fecha = new Date();
-            const opciones = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            document.getElementById('fechaActual').textContent = 
-                `Liquidación del ${fecha.toLocaleDateString('es-CO', opciones)}`;
-        }
-
-        // 🔥 CARGAR RECOGIDAS PENDIENTES
-// 🔥 CARGAR ENTRADAS PENDIENTES
 async function cargarEntradasPendientes() {
     const container = document.getElementById('entradasContainer');
     
@@ -689,32 +781,28 @@ async function cargarEntradasPendientes() {
                     <p>No hay entradas pendientes de liquidar</p>
                 </div>
             `;
+            actualizarTotalEntradasSeleccionadas();
             return;
         }
 
         container.innerHTML = entradasPendientes.map((entrada) => {
-    const fechaFormateada = new Date(entrada.fechaEntrada).toLocaleDateString('es-CO');
-    
-    return `
-        <div class="recogida-item pagada" id="entrada-${entrada._id}">
-            <div class="recogida-info">
-                <div class="recogida-finca">💵 ${entrada.descripcion}</div>
-                <div class="recogida-detalles">
-                    📅 ${fechaFormateada}
+            const fechaFormateada = new Date(entrada.fechaEntrada).toLocaleDateString('es-CO');
+            
+            return `
+                <div class="recogida-item pagada" id="entrada-${entrada._id}">
+                    <div class="recogida-info">
+                        <div class="recogida-finca">💵 ${entrada.descripcion}</div>
+                        <div class="recogida-detalles">
+                            📅 ${fechaFormateada}
+                        </div>
+                    </div>
+                    <div class="recogida-valor">$${entrada.valor.toLocaleString('es-CO')}</div>
                 </div>
-            </div>
-            <div class="recogida-valor">$${entrada.valor.toLocaleString('es-CO')}</div>
-        </div>
-    `;
-}).join('');
+            `;
+        }).join('');
 
-// Marcar todas automáticamente como incluidas
-entradasPendientes.forEach(entrada => {
-    recogidasPagadas.add(entrada._id);
-});
-
-actualizarTotalEntradasSeleccionadas();
-calcularResumen();
+        actualizarTotalEntradasSeleccionadas();
+        calcularResumen();
     } catch (error) {
         console.error('Error al cargar entradas:', error);
         showAlert('Error al cargar entradas: ' + error.message, 'error');
@@ -726,301 +814,369 @@ calcularResumen();
         `;
     }
 }
-        // 🔥 MARCAR RECOGIDA COMO PAGADA
-function marcarComoPagada(id, valor) {
-    const recogidaElement = document.getElementById(`entrada-${id}`);
-    const boton = document.getElementById(`btn-${id}`);
-    
-    if (recogidasPagadas.has(id)) {
-        recogidasPagadas.delete(id);
-        recogidaElement.classList.remove('pagada');
-        boton.textContent = '¿ Incluir?';
-        boton.classList.remove('pagado');
-    } else {
-        recogidasPagadas.add(id);
-        recogidaElement.classList.add('pagada');
-        boton.textContent = '✅ Incluida';
-        boton.classList.add('pagado');
-        showAlert(`Entrada incluida: $${valor.toLocaleString('es-CO')}`, 'success');
-    }
-    
-    document.getElementById('totalEntradasSeleccionadas').textContent = 
-        '$' + Array.from(recogidasPagadas).reduce((sum, id) => {
-            const entrada = entradasPendientes.find(e => e._id === id);
-            return sum + (entrada ? entrada.valor : 0);
-        }, 0).toLocaleString('es-CO');
-    
-    calcularResumen();
-}
-        function calcularTotalRecogidasConfirmadas() {
-            const total = recogidasPendientes
-                .filter(r => recogidasPagadas.has(r._id))
-                .reduce((sum, r) => sum + r.valorPagar, 0);
-            
-            document.getElementById('totalRecogidasConfirmadas').textContent = 
-                '$' + total.toLocaleString('es-CO');
-        }
 
-        function actualizarTotalEntradasSeleccionadas() {
+function actualizarTotalEntradasSeleccionadas() {
     const total = entradasPendientes.reduce((sum, entrada) => sum + entrada.valor, 0);
     document.getElementById('totalEntradasSeleccionadas').textContent = 
         '$' + total.toLocaleString('es-CO');
 }
 
-        // 🔥 INGRESOS ADICIONALES
-        function agregarIngresoAdicional() {
-            const desc = document.getElementById('ingresoAdicionalDesc').value.trim();
-            const valor = parseFloat(document.getElementById('ingresoAdicionalValor').value);
-
-            if (!desc || !valor || valor <= 0) {
-                showAlert('Por favor completa la descripción y el valor', 'error');
-                return;
+async function cargarGastosPendientes() {
+    const container = document.getElementById('egresosContainer');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/liquidacion/gastos-pendientes`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
+        });
 
-            const ingreso = {
-                id: Date.now(),
-                descripcion: desc,
-                valor: valor
-            };
+        const data = await response.json();
 
-            ingresosAdicionales.push(ingreso);
-            
-            document.getElementById('ingresoAdicionalDesc').value = '';
-            document.getElementById('ingresoAdicionalValor').value = '';
-            
-            mostrarIngresosAdicionales();
-            calcularResumen();
-            
-            showAlert('Ingreso adicional agregado', 'success');
+        if (!data.success) {
+            throw new Error(data.message || 'Error al cargar gastos');
         }
 
-        function mostrarIngresosAdicionales() {
-            const container = document.getElementById('ingresosAdicionalesContainer');
-            
-            if (ingresosAdicionales.length === 0) {
-                container.innerHTML = '';
-                document.getElementById('totalIngresosAdicionales').textContent = '$0';
-                return;
-            }
+        gastosPendientes = data.gastos || [];
 
-            container.innerHTML = ingresosAdicionales.map(ingreso => `
-                <div class="ingreso-adicional-item">
-                    <div class="ingreso-adicional-info">
-                        <div class="ingreso-adicional-desc">${ingreso.descripcion}</div>
-                        <div class="ingreso-adicional-valor">$${ingreso.valor.toLocaleString('es-CO')}</div>
-                    </div>
-                    <button class="btn-eliminar-ingreso" onclick="eliminarIngresoAdicional(${ingreso.id})">
-                        ✕
-                    </button>
+        if (gastosPendientes.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🔭</div>
+                    <p>No hay gastos pendientes de liquidar</p>
                 </div>
-            `).join('');
-
-            const total = ingresosAdicionales.reduce((sum, ing) => sum + ing.valor, 0);
-            document.getElementById('totalIngresosAdicionales').textContent = 
-                '$' + total.toLocaleString('es-CO');
+            `;
+            calcularTotalEgresos();
+            return;
         }
 
-        function eliminarIngresoAdicional(id) {
-            ingresosAdicionales = ingresosAdicionales.filter(ing => ing.id !== id);
-            mostrarIngresosAdicionales();
-            calcularResumen();
-            showAlert('Ingreso eliminado', 'success');
-        }
+        let html = '';
 
-        // 🔥 CARGAR GASTOS PENDIENTES
-        async function cargarGastosPendientes() {
-            const container = document.getElementById('egresosContainer');
+        gastosPendientes.forEach(gasto => {
+            const fechaFormateada = new Date(gasto.fechaGasto || gasto.fechaCreacion)
+                .toLocaleDateString('es-CO');
             
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/liquidacion/gastos-pendientes`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    throw new Error(data.message || 'Error al cargar gastos');
-                }
-
-                gastosPendientes = data.gastos || [];
-
-                if (gastosPendientes.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">📭</div>
-                            <p>No hay gastos pendientes de liquidar</p>
+            html += `
+                <div class="egreso-item">
+                    <div>
+                        <div class="egreso-desc">💸 ${gasto.descripcion}</div>
+                        <div style="font-size: 12px; color: var(--text-light); margin-top: 3px;">
+                            📅 ${fechaFormateada}
                         </div>
-                    `;
-                    calcularTotalEgresos();
-                    return;
-                }
+                    </div>
+                    <div class="egreso-valor">$${gasto.valor.toLocaleString('es-CO')}</div>
+                </div>
+            `;
 
-                let html = '';
-
-                gastosPendientes.forEach(gasto => {
-                    const fechaFormateada = new Date(gasto.fechaGasto || gasto.fechaCreacion)
-                        .toLocaleDateString('es-CO');
-                    
+            if (gasto.productosInventario && gasto.productosInventario.length > 0) {
+                gasto.productosInventario.forEach(prod => {
+                    const valorProd = prod.cantidadUsada * (prod.precio || 0);
                     html += `
-                        <div class="egreso-item">
+                        <div class="egreso-item" style="margin-left: 20px; border-left-color: var(--warning);">
                             <div>
-                                <div class="egreso-desc">💸 ${gasto.descripcion}</div>
-                                <div style="font-size: 12px; color: var(--text-light); margin-top: 3px;">
-                                    📅 ${fechaFormateada}
+                                <div class="egreso-desc">📦 ${prod.nombre}</div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    Inventario: ${prod.cantidadUsada} unidades
                                 </div>
                             </div>
-                            <div class="egreso-valor">$${gasto.valor.toLocaleString('es-CO')}</div>
+                            <div class="egreso-valor">$${valorProd.toLocaleString('es-CO')}</div>
                         </div>
                     `;
-
-                    // Mostrar inventario usado
-                    if (gasto.productosInventario && gasto.productosInventario.length > 0) {
-                        gasto.productosInventario.forEach(prod => {
-                            const valorProd = prod.cantidadUsada * (prod.precio || 0);
-                            html += `
-                                <div class="egreso-item" style="margin-left: 20px; border-left-color: var(--warning);">
-                                    <div>
-                                        <div class="egreso-desc">📦 ${prod.nombre}</div>
-                                        <div style="font-size: 12px; color: var(--text-light);">
-                                            Inventario: ${prod.cantidadUsada} unidades
-                                        </div>
-                                    </div>
-                                    <div class="egreso-valor">$${valorProd.toLocaleString('es-CO')}</div>
-                                </div>
-                            `;
-                        });
-                    }
                 });
+            }
+        });
 
-                container.innerHTML = html;
-                calcularTotalEgresos();
+        container.innerHTML = html;
+        calcularTotalEgresos();
 
-            } catch (error) {
-                console.error('Error al cargar gastos:', error);
-                showAlert('Error al cargar gastos: ' + error.message, 'error');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <p>Error al cargar gastos pendientes</p>
+    } catch (error) {
+        console.error('Error al cargar gastos:', error);
+        showAlert('Error al cargar gastos: ' + error.message, 'error');
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">❌</div>
+                <p>Error al cargar gastos pendientes</p>
+            </div>
+        `;
+    }
+}
+
+function calcularTotalEgresos() {
+    const total = gastosPendientes.reduce((sum, gasto) => {
+        return sum + gasto.valorTotal;
+    }, 0);
+    
+    document.getElementById('totalEgresos').textContent = 
+        '$' + total.toLocaleString('es-CO');
+}
+
+function calcularResumen() {
+    const cajaInicial = parseFloat(document.getElementById('cajaInicial').value) || 0;
+    const totalEntradasIncluidas = entradasPendientes.reduce((sum, e) => sum + (parseFloat(e.valor) || 0), 0);
+    const totalIngresosAd = ingresosAdicionales.reduce((sum, ing) => sum + (parseFloat(ing.valor) || 0), 0);
+    const totalIngresos = totalEntradasIncluidas + totalIngresosAd;
+    const totalEgresos = gastosPendientes.reduce((sum, gasto) => sum + (parseFloat(gasto.valorTotal || gasto.valor || 0)), 0);
+    const cajaFinal = cajaInicial + totalIngresos - totalEgresos;
+
+    document.getElementById('resumenCajaInicial').textContent = '$' + cajaInicial.toLocaleString('es-CO');
+    document.getElementById('resumenTotalIngresos').textContent = '$' + totalIngresos.toLocaleString('es-CO');
+    document.getElementById('resumenTotalEgresos').textContent = '$' + totalEgresos.toLocaleString('es-CO');
+    document.getElementById('resumenCajaFinal').textContent = '$' + cajaFinal.toLocaleString('es-CO');
+}
+
+async function procesarLiquidacion() {
+    if (entradasPendientes.length === 0 && ingresosAdicionales.length === 0 && gastosPendientes.length === 0) {
+        showAlert('No hay datos para liquidar', 'error');
+        return;
+    }
+
+    if (!confirm('¿Estás seguro de procesar esta liquidación? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    const btnProcesar = document.getElementById('btnProcesar');
+    btnProcesar.disabled = true;
+    btnProcesar.textContent = 'Procesando...';
+
+    try {
+        const token = localStorage.getItem('token');
+        const cajaInicial = Number(document.getElementById('cajaInicial').value) || 0;
+        const notas = document.getElementById('notasLiquidacion').value.trim();
+        const entradasIds = entradasPendientes.map(e => e._id);
+        const gastosIds = gastosPendientes.map(g => g._id).filter(Boolean);
+        const totalEntradas = entradasPendientes.reduce((s, e) => s + (Number(e.valor) || 0), 0);
+        const totalIngresosAd = ingresosAdicionales.reduce((s, x) => s + (Number(x.valor) || 0), 0);
+        const totalIngresos = totalEntradas + totalIngresosAd;
+        const totalEgresos = gastosPendientes.reduce((s, g) => s + (Number(g.valorTotal || g.valor) || 0), 0);
+        const cajaFinal = cajaInicial + totalIngresos - totalEgresos;
+
+        const datosLiquidacion = {
+            cajaInicial: Number(cajaInicial),
+            entradasSeleccionadas: entradasIds,
+            ingresosAdicionales: ingresosAdicionales.map(ing => ({
+                descripcion: String(ing.descripcion || ''),
+                valor: Number(ing.valor) || 0
+            })),
+            gastosIds: gastosIds,
+            totalEntradas: Number(totalEntradas.toFixed(2)),
+            totalIngresos: Number(totalIngresos.toFixed(2)),
+            totalEgresos: Number(totalEgresos.toFixed(2)),
+            cajaFinal: Number(cajaFinal.toFixed(2)),
+            notas: notas
+        };
+
+        const response = await fetch(`${API_URL}/liquidacion/procesar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(datosLiquidacion)
+        });
+
+        let data;
+        const text = await response.text();
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (e) {
+            data = { success: response.ok, message: text || 'Respuesta no JSON del servidor' };
+        }
+
+        if (!response.ok || !data.success) {
+            const msg = data.message || ('Error al procesar liquidación (status ' + response.status + ')');
+            throw new Error(msg);
+        }
+
+        showAlert('✅ Liquidación procesada exitosamente', 'success');
+        setTimeout(() => {
+            window.location.href = 'historial-liquidaciones.html';
+        }, 1200);
+
+    } catch (error) {
+        console.error('❌ Error al procesar liquidación:', error);
+        showAlert('Error al procesar liquidación: ' + (error.message || error), 'error');
+        btnProcesar.disabled = false;
+        btnProcesar.textContent = '✅ Procesar Liquidación';
+    }
+}
+
+// 🔥 CONTROL DE CAJA - MODAL
+function abrirControlCaja() {
+    document.getElementById('modalControlCaja').style.display = 'flex';
+    // Actualizar valor mostrado en el modal
+    document.getElementById('modalCajaActual').textContent = cajaActualGlobal.toLocaleString('es-CO');
+    cargarHistorialMovimientos();
+}
+
+function cerrarControlCaja() {
+    document.getElementById('modalControlCaja').style.display = 'none';
+}
+
+async function registrarMovimientoCaja(tipo) {
+    const valor = parseFloat(document.getElementById('valorMovimiento').value);
+    const descripcion = document.getElementById('descripcionMovimiento').value.trim();
+
+    if (!valor || valor <= 0) {
+        showAlert('Ingresa un valor válido', 'error');
+        return;
+    }
+
+    if (!descripcion) {
+        showAlert('Ingresa una descripción', 'error');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/liquidacion/movimiento-caja`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                tipo: tipo,
+                valor: valor,
+                descripcion: descripcion
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert(`✅ ${tipo === 'ingreso' ? 'Ingreso' : 'Retiro'} registrado exitosamente`, 'success');
+            document.getElementById('valorMovimiento').value = '';
+            document.getElementById('descripcionMovimiento').value = '';
+            await cargarCajaActual();
+            await cargarHistorialMovimientos();
+        } else {
+            showAlert(data.message || 'Error al registrar movimiento', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error al registrar movimiento', 'error');
+    }
+}
+
+async function cargarHistorialMovimientos() {
+    const container = document.getElementById('historialMovimientos');
+    container.innerHTML = '<div class="loading active"><div class="spinner"></div></div>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/liquidacion/movimientos-caja`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.movimientos.length > 0) {
+            container.innerHTML = data.movimientos.map(mov => {
+                const fecha = new Date(mov.fecha).toLocaleString('es-CO');
+                const esIngreso = mov.tipo === 'ingreso';
+                
+                return `
+                    <div class="movimiento-item ${esIngreso ? 'ingreso' : 'retiro'}">
+                        <div class="movimiento-info">
+                            <div class="movimiento-tipo">${esIngreso ? '📈 Ingreso' : '📉 Retiro'}</div>
+                            <div class="movimiento-desc">${mov.descripcion}</div>
+                            <div class="movimiento-fecha">${fecha}</div>
+                        </div>
+                        <div class="movimiento-valor ${esIngreso ? 'positivo' : 'negativo'}">
+                            ${esIngreso ? '+' : '-'}$${mov.valor.toLocaleString('es-CO')}
+                        </div>
                     </div>
                 `;
-            }
-        }
-
-        function calcularTotalEgresos() {
-            const total = gastosPendientes.reduce((sum, gasto) => {
-                return sum + gasto.valorTotal;
-            }, 0);
-            
-            document.getElementById('totalEgresos').textContent = 
-                '$' + total.toLocaleString('es-CO');
-        }
-
-        // 🔥 CALCULAR RESUMEN TOTAL
-        function calcularResumen() {
-            const cajaInicial = parseFloat(document.getElementById('cajaInicial').value) || 0;
-            
-            const totalRecogidasPagadas = recogidasPendientes
-                .filter(r => recogidasPagadas.has(r._id))
-                .reduce((sum, r) => sum + r.valorPagar, 0);
-            
-            const totalIngresosAd = ingresosAdicionales.reduce((sum, ing) => sum + ing.valor, 0);
-            
-            const totalIngresos = totalRecogidasPagadas + totalIngresosAd;
-            
-            const totalEgresos = gastosPendientes.reduce((sum, gasto) => sum + gasto.valorTotal, 0);
-            
-            const cajaFinal = cajaInicial + totalIngresos - totalEgresos;
-
-            // Actualizar UI
-            document.getElementById('resumenCajaInicial').textContent = 
-                '$' + cajaInicial.toLocaleString('es-CO');
-            document.getElementById('resumenTotalIngresos').textContent = 
-                '$' + totalIngresos.toLocaleString('es-CO');
-            document.getElementById('resumenTotalEgresos').textContent = 
-                '$' + totalEgresos.toLocaleString('es-CO');
-            document.getElementById('resumenCajaFinal').textContent = 
-                '$' + cajaFinal.toLocaleString('es-CO');
-        }
-
-        // 🔥 PROCESAR LIQUIDACIÓN
-        async function procesarLiquidacion() {
-            if (recogidasPagadas.size === 0 && ingresosAdicionales.length === 0 && gastosPendientes.length === 0) {
-                showAlert('No hay datos para liquidar', 'error');
-                return;
-            }
-
-            if (!confirm('¿Estás seguro de procesar esta liquidación? Esta acción no se puede deshacer.')) {
-                return;
-            }
-
-            const btnProcesar = document.getElementById('btnProcesar');
-            btnProcesar.disabled = true;
-            btnProcesar.textContent = 'Procesando...';
-
-            try {
-                const token = localStorage.getItem('token');
-                const cajaInicial = parseFloat(document.getElementById('cajaInicial').value) || 0;
-                const notas = document.getElementById('notasLiquidacion').value.trim();
-
-                const datosLiquidacion = {
-                    cajaInicial: cajaInicial,
-                    recogidasPagadas: Array.from(recogidasPagadas),
-                    ingresosAdicionales: ingresosAdicionales.map(ing => ({
-                        descripcion: ing.descripcion,
-                        valor: ing.valor
-                    })),
-                    gastosIds: gastosPendientes.map(g => g._id),
-                    notas: notas
-                };
-
-                const response = await fetch(`${API_URL}/liquidacion/procesar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(datosLiquidacion)
-                });
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    throw new Error(data.message || 'Error al procesar liquidación');
-                }
-
-                showAlert('✅ Liquidación procesada exitosamente', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = 'historial-liquidaciones.html';
-                }, 2000);
-
-            } catch (error) {
-                console.error('Error al procesar liquidación:', error);
-                showAlert('Error al procesar liquidación: ' + error.message, 'error');
-                btnProcesar.disabled = false;
-                btnProcesar.textContent = '✅ Procesar Liquidación';
-            }
-        }
-
-        function showAlert(message, type) {
-            const container = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `
-                <span>${type === 'success' ? '✅' : '⚠️'}</span>
-                <span>${message}</span>
+            }).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p style="font-size: 14px; color: var(--text-light);">No hay movimientos registrados</p>
+                </div>
             `;
-            container.innerHTML = '';
-            container.appendChild(alert);
-
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
         }
-    </script>
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<p style="color: var(--danger); text-align: center;">Error al cargar historial</p>';
+    }
+}
+
+function showAlert(message, type) {
+    const container = document.getElementById('alertContainer');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+        <span>${type === 'success' ? '✅' : '⚠️'}</span>
+        <span>${message}</span>
+    `;
+    container.innerHTML = '';
+    container.appendChild(alert);
+
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+// Cerrar modal al hacer clic fuera
+window.onclick = function(event) {
+    const modal = document.getElementById('modalControlCaja');
+    if (event.target == modal) {
+        cerrarControlCaja();
+    }
+}
+</script>
+
+<!-- MODAL CONTROL DE CAJA -->
+<div id="modalControlCaja" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 20px; padding: 30px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="font-size: 24px; color: var(--primary-dark); margin: 0;">💰 Control de Caja</h2>
+            <button onclick="cerrarControlCaja()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-light);">×</button>
+        </div>
+
+        <!-- Caja Actual -->
+        <div style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 25px;">
+            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Caja Actual</div>
+            <div style="font-size: 36px; font-weight: 800;">$<span id="modalCajaActual">0</span></div>
+        </div>
+
+        <!-- Formulario Movimiento -->
+        <div class="form-group">
+            <label class="form-label">💵 Valor del Movimiento</label>
+            <input type="number" id="valorMovimiento" class="form-input" placeholder="Ej: 50000" min="0" step="0.01">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">📝 Descripción</label>
+            <input type="text" id="descripcionMovimiento" class="form-input" placeholder="Ej: Retiro para gastos personales" maxlength="100">
+        </div>
+
+        <!-- Botones -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+            <button onclick="registrarMovimientoCaja('ingreso')" style="background: linear-gradient(135deg, var(--success), #20c997); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                📈 Ingresar Dinero
+            </button>
+            <button onclick="registrarMovimientoCaja('retiro')" style="background: linear-gradient(135deg, var(--danger), #c82333); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                📉 Retirar Dinero
+            </button>
+        </div>
+
+        <!-- Historial -->
+        <div>
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--primary-dark); margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 10px;">📋 Historial de Movimientos</h3>
+            <div id="historialMovimientos" style="max-height: 300px; overflow-y: auto;">
+                <div class="loading active">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 </body>
 </html>

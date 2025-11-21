@@ -8,6 +8,216 @@ const axios = require('axios');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const Entrada = require('../models/Entrada');
+// Al inicio del archivo, agregar:
+const MovimientoCaja = require('../models/MovimientoCaja');
+
+// Agregar estas rutas ANTES de module.exports:
+
+// 🔥 OBTENER CAJA ACTUAL (última liquidación)
+router.get('/caja-actual', verificarToken, async (req, res) => {
+  try {
+    const usuarioData = await User.findById(req.usuario.id);
+    if (!usuarioData || !usuarioData.fincaActiva) {
+      return res.json({ 
+        success: true, 
+        cajaActual: 0,
+        message: 'No hay finca activa seleccionada'
+      });
+    }
+    
+    const fincaActiva = usuarioData.fincaActiva;
+    
+    // Buscar la última liquidación de esta finca
+    const ultimaLiquidacion = await Liquidacion.findOne({
+      usuario: req.usuario.id,
+      finca: fincaActiva
+    }).sort({ fecha: -1 });
+    
+    let cajaActual = 0;
+    
+    if (ultimaLiquidacion) {
+      cajaActual = ultimaLiquidacion.cajaFinal;
+    }
+    
+    // Sumar/restar movimientos posteriores a la última liquidación
+    const fechaUltimaLiquidacion = ultimaLiquidacion ? ultimaLiquidacion.fecha : new Date(0);
+    
+    const movimientos = await MovimientoCaja.find({
+      usuario: req.usuario.id,
+      finca: fincaActiva,
+      fecha: { $gt: fechaUltimaLiquidacion }
+    });
+    
+    movimientos.forEach(mov => {
+      if (mov.tipo === 'ingreso') {
+        cajaActual += mov.valor;
+      } else {
+        cajaActual -= mov.valor;
+      }
+    });
+    
+    res.json({ 
+      success: true, 
+      cajaActual: cajaActual,
+      ultimaLiquidacion: ultimaLiquidacion ? {
+        fecha: ultimaLiquidacion.fecha,
+        cajaFinal: ultimaLiquidacion.cajaFinal
+      } : null
+    });
+    
+  } catch (error) {
+    console.error('Error al obtener caja actual:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener caja actual',
+      error: error.message 
+    });
+  }
+});
+
+// 🔥 REGISTRAR MOVIMIENTO DE CAJA
+router.post('/movimiento-caja', verificarToken, async (req, res) => {
+  try {
+    const { tipo, valor, descripcion } = req.body;
+    
+    if (!tipo || !valor || !descripcion) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos los campos son obligatorios'
+      });
+    }
+    
+    if (!['ingreso', 'retiro'].includes(tipo)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de movimiento inválido'
+      });
+    }
+    
+    if (valor <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El valor debe ser mayor a 0'
+      });
+    }
+    
+    const usuarioData = await User.findById(req.usuario.id);
+    if (!usuarioData || !usuarioData.fincaActiva) {
+      return res.status(400).json({
+        success: false,
+        message: 'No hay finca activa seleccionada'
+      });
+    }
+    
+    const fincaActiva = usuarioData.fincaActiva;
+    
+    // Obtener caja actual
+    const ultimaLiquidacion = await Liquidacion.findOne({
+      usuario: req.usuario.id,
+      finca: fincaActiva
+    }).sort({ fecha: -1 });
+    
+    let cajaAntes = ultimaLiquidacion ? ultimaLiquidacion.cajaFinal : 0;
+    
+    // Considerar movimientos posteriores
+    const fechaUltimaLiquidacion = ultimaLiquidacion ? ultimaLiquidacion.fecha : new Date(0);
+    const movimientosAnteriores = await MovimientoCaja.find({
+      usuario: req.usuario.id,
+      finca: fincaActiva,
+      fecha: { $gt: fechaUltimaLiquidacion }
+    });
+    
+    movimientosAnteriores.forEach(mov => {
+      if (mov.tipo === 'ingreso') {
+        cajaAntes += mov.valor;
+      } else {
+        cajaAntes -= mov.valor;
+      }
+    });
+    
+    // Calcular caja después del movimiento
+    let cajaDespues = cajaAntes;
+    if (tipo === 'ingreso') {
+      cajaDespues += valor;
+    } else {
+      cajaDespues -= valor;
+      
+      if (cajaDespues < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No hay suficiente dinero en caja para este retiro'
+        });
+      }
+    }
+    
+    // Crear movimiento
+    const movimiento = new MovimientoCaja({
+      usuario: req.usuario.id,
+      usuarioNombre: usuarioData.nombre || usuarioData.usuario,
+      finca: fincaActiva,
+      tipo: tipo,
+      valor: parseFloat(valor),
+      descripcion: descripcion.trim(),
+      cajaAntes: cajaAntes,
+      cajaDespues: cajaDespues
+    });
+    
+    await movimiento.save();
+    
+    res.json({
+      success: true,
+      message: `${tipo === 'ingreso' ? 'Ingreso' : 'Retiro'} registrado exitosamente`,
+      movimiento: movimiento,
+      cajaActual: cajaDespues
+    });
+    
+  } catch (error) {
+    console.error('Error al registrar movimiento:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al registrar movimiento',
+      error: error.message 
+    });
+  }
+});
+
+// 🔥 OBTENER HISTORIAL DE MOVIMIENTOS DE CAJA
+router.get('/movimientos-caja', verificarToken, async (req, res) => {
+  try {
+    const { limite = 50 } = req.query;
+    
+    const usuarioData = await User.findById(req.usuario.id);
+    if (!usuarioData || !usuarioData.fincaActiva) {
+      return res.json({ 
+        success: true, 
+        movimientos: [],
+        message: 'No hay finca activa seleccionada'
+      });
+    }
+    
+    const fincaActiva = usuarioData.fincaActiva;
+    
+    const movimientos = await MovimientoCaja.find({
+      usuario: req.usuario.id,
+      finca: fincaActiva
+    })
+    .sort({ fecha: -1 })
+    .limit(parseInt(limite));
+    
+    res.json({ 
+      success: true, 
+      movimientos: movimientos
+    });
+    
+  } catch (error) {
+    console.error('Error al obtener movimientos:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener movimientos',
+      error: error.message 
+    });
+  }
+});
 
 router.get('/entradas-pendientes', verificarToken, async (req, res) => {
   try {
