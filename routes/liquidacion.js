@@ -7,16 +7,10 @@ const { verificarToken } = require('../middleware/auth');
 const axios = require('axios');
 const User = require('../models/User');
 const mongoose = require('mongoose');
-const Entrada = require('../models/Entrada'); // ← AGREGAR ESTA LÍNEA
-
-
-
+const Entrada = require('../models/Entrada');
 
 router.get('/entradas-pendientes', verificarToken, async (req, res) => {
   try {
-    const User = require('../models/User');
-    const Entrada = require('../models/Entrada');
-    
     // Obtener la finca activa del usuario
     const usuarioData = await User.findById(req.usuario.id);
     if (!usuarioData || !usuarioData.fincaActiva) {
@@ -54,8 +48,6 @@ router.get('/entradas-pendientes', verificarToken, async (req, res) => {
 // 🔥 OBTENER GASTOS SIN LIQUIDAR
 router.get('/gastos-pendientes', verificarToken, async (req, res) => {
   try {
-    const User = require('../models/User');
-    
     // Obtener la finca activa del usuario
     const usuarioData = await User.findById(req.usuario.id);
     if (!usuarioData || !usuarioData.fincaActiva) {
@@ -71,7 +63,7 @@ router.get('/gastos-pendientes', verificarToken, async (req, res) => {
     // 🔥 FILTRAR GASTOS POR USUARIO Y FINCA ACTIVA
     const gastos = await Gasto.find({ 
       usuario: req.usuario.id,
-      finca: fincaActiva, // 🔥 FILTRO CRÍTICO
+      finca: fincaActiva,
       reciboDia: false 
     })
     .populate('usuario', 'nombre usuario')
@@ -105,19 +97,15 @@ router.get('/gastos-pendientes', verificarToken, async (req, res) => {
   }
 });
 
-// 🔥 PROCESAR LIQUIDACIÓN COMPLETA
 // 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CON ENTRADAS
 router.post('/procesar', verificarToken, async (req, res) => {
   try {
     const { 
       cajaInicial,
-      entradasSeleccionadas, // Array de IDs de entradas
+      entradasSeleccionadas,
       gastosIds,
       notas
     } = req.body;
-    
-    const User = require('../models/User');
-    const Entrada = require('../models/Entrada');
     
     // 🔥 OBTENER LA FINCA ACTIVA DEL USUARIO
     const usuarioData = await User.findById(req.usuario.id);
