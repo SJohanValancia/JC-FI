@@ -15,6 +15,10 @@ const liquidacionSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  finca: {
+    type: String,
+    required: true
+  },
   
   // Caja
   cajaInicial: { 
@@ -27,25 +31,19 @@ const liquidacionSchema = new mongoose.Schema({
     required: true 
   },
   
-  // Ingresos
+  // Ingresos - AHORA DESDE ENTRADAS
   totalIngresos: { 
     type: Number, 
     required: true,
     default: 0 
   },
-  ingresoRecogidas: { 
-    type: Number, 
-    default: 0 
-  },
-  ingresosAdicionales: [{
+  
+  entradasLiquidadas: [{
+    entradaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entrada' },
     descripcion: String,
     valor: Number,
-    fecha: { type: Date, default: Date.now }
+    fechaEntrada: Date
   }],
-  totalIngresosAdicionales: {
-    type: Number,
-    default: 0
-  },
   
   // Egresos
   totalEgresos: { 
@@ -54,19 +52,11 @@ const liquidacionSchema = new mongoose.Schema({
     default: 0 
   },
   
-  // Referencias (IDs guardados como strings porque vienen de otra BD)
-  recogidasLiquidadas: [{
-    recogidaId: String,
-    finca: String,
-    fecha: String,
-    kilos: Number,
-    valor: Number
-  }],
-  
   gastosLiquidados: [{
     gastoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gasto' },
     descripcion: String,
-    valor: Number
+    valor: Number,
+    finca: String
   }],
   
   inventarioUsado: [{
@@ -92,7 +82,6 @@ const liquidacionSchema = new mongoose.Schema({
 
 // Método para calcular totales
 liquidacionSchema.methods.calcularTotales = function() {
-  this.totalIngresos = this.ingresoRecogidas + this.totalIngresosAdicionales;
   this.cajaFinal = this.cajaInicial + this.totalIngresos - this.totalEgresos;
 };
 

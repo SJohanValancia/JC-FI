@@ -4,52 +4,45 @@ const Liquidacion = require('../models/Liquidacion');
 const Gasto = require('../models/Gasto');
 const Inventario = require('../models/Inventario');
 const { verificarToken } = require('../middleware/auth');
+const Entrada = require('../models/Entrada');
 const axios = require('axios'); // Necesario para llamar a la otra API
     const User = require('../models/User'); // Asegúrate de importar el modelo
 
 
-// 🔥 OBTENER RECOGIDAS SIN LIQUIDAR DE JC-FRUTAS
-// 🔥 OBTENER RECOGIDAS SIN LIQUIDAR DE JC-FRUTAS
-router.get('/recogidas-pendientes', verificarToken, async (req, res) => {
+router.get('/entradas-pendientes', verificarToken, async (req, res) => {
   try {
-    const usuario = req.usuario.usuario;
+    const User = require('../models/User');
+    const Entrada = require('../models/Entrada');
     
     // Obtener la finca activa del usuario
     const usuarioData = await User.findById(req.usuario.id);
     if (!usuarioData || !usuarioData.fincaActiva) {
       return res.json({ 
         success: true, 
-        recogidas: [],
+        entradas: [],
         message: 'No hay finca activa seleccionada'
       });
     }
     
     const fincaActiva = usuarioData.fincaActiva;
     
-    // Llamar a la API de JC-Frutas
-    const response = await axios.get(
-      `https://jc-frutas.onrender.com/recogidas/sin-liquidar/${usuario}`
-    );
-    
-    if (!response.data) {
-      return res.json({ success: true, recogidas: [] });
-    }
-    
-    // 🔥 FILTRAR SOLO LAS RECOGIDAS DE LA FINCA ACTIVA
-    const recogidasFiltradas = response.data.filter(r => 
-      r.finca === fincaActiva
-    );
+    // Obtener entradas no liquidadas de la finca activa
+    const entradas = await Entrada.find({
+      usuario: req.usuario.id,
+      finca: fincaActiva,
+      liquidada: false
+    }).sort({ fechaEntrada: -1 });
     
     res.json({ 
       success: true, 
-      recogidas: recogidasFiltradas,
+      entradas,
       fincaActiva: fincaActiva
     });
   } catch (error) {
-    console.error('Error al obtener recogidas pendientes:', error);
+    console.error('Error al obtener entradas pendientes:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Error al obtener recogidas pendientes',
+      message: 'Error al obtener entradas pendientes',
       error: error.message 
     });
   }
@@ -110,17 +103,18 @@ router.get('/gastos-pendientes', verificarToken, async (req, res) => {
 });
 
 // 🔥 PROCESAR LIQUIDACIÓN COMPLETA
+// 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CON ENTRADAS
 router.post('/procesar', verificarToken, async (req, res) => {
   try {
     const { 
       cajaInicial,
-      recogidasPagadas, // Array de IDs de recogidas que se pagaron
-      ingresosAdicionales,
+      entradasSeleccionadas, // Array de IDs de entradas
       gastosIds,
       notas
     } = req.body;
     
     const User = require('../models/User');
+    const Entrada = require('../models/Entrada');
     
     // 🔥 OBTENER LA FINCA ACTIVA DEL USUARIO
     const usuarioData = await User.findById(req.usuario.id);
@@ -134,58 +128,44 @@ router.post('/procesar', verificarToken, async (req, res) => {
     const fincaActiva = usuarioData.fincaActiva;
     console.log('🏡 Procesando liquidación para finca:', fincaActiva);
     
-    if (!Array.isArray(recogidasPagadas) || !Array.isArray(gastosIds)) {
+    if (!Array.isArray(entradasSeleccionadas) || !Array.isArray(gastosIds)) {
       return res.status(400).json({
         success: false,
         message: 'Datos de liquidación inválidos'
       });
     }
     
-    // 1️⃣ Obtener información detallada de recogidas desde JC-Frutas
-    let recogidasDetalle = [];
-    let totalRecogidas = 0;
+    // 1️⃣ Obtener información de entradas
+    const entradas = await Entrada.find({
+      _id: { $in: entradasSeleccionadas },
+      usuario: req.usuario.id,
+      finca: fincaActiva,
+      liquidada: false
+    });
     
-    if (recogidasPagadas.length > 0) {
-      try {
-        const responseRecogidas = await axios.post(
-          'https://jc-frutas.onrender.com/recogidas/obtener-multiples',
-          { ids: recogidasPagadas }
-        );
-        
-        // 🔥 FILTRAR SOLO RECOGIDAS DE LA FINCA ACTIVA
-        const recogidasFiltradas = responseRecogidas.data.filter(r => 
-          r.finca === fincaActiva
-        );
-        
-        if (recogidasFiltradas.length !== responseRecogidas.data.length) {
-          console.warn(`⚠️ Se filtraron ${responseRecogidas.data.length - recogidasFiltradas.length} recogidas de otras fincas`);
-        }
-        
-        recogidasDetalle = recogidasFiltradas.map(r => ({
-          recogidaId: r._id,
-          finca: r.finca,
-          fecha: r.fecha,
-          kilos: r.totalKilos,
-          valor: r.valorPagar
-        }));
-        
-        totalRecogidas = recogidasDetalle.reduce((sum, r) => sum + r.valor, 0);
-        console.log(`✅ Total recogidas de ${fincaActiva}: $${totalRecogidas}`);
-      } catch (error) {
-        console.error('Error al obtener recogidas:', error);
-      }
+    if (entradas.length !== entradasSeleccionadas.length) {
+      console.warn(`⚠️ Se encontraron ${entradas.length} de ${entradasSeleccionadas.length} entradas solicitadas`);
     }
     
-    // 2️⃣ Obtener información de gastos - 🔥 FILTRADO POR FINCA ACTIVA
+    const entradasDetalle = entradas.map(e => ({
+      entradaId: e._id,
+      descripcion: e.descripcion,
+      valor: e.valor,
+      fechaEntrada: e.fechaEntrada
+    }));
+    
+    const totalEntradas = entradas.reduce((sum, e) => sum + e.valor, 0);
+    console.log(`💰 Total entradas de ${fincaActiva}: $${totalEntradas}`);
+    
+    // 2️⃣ Obtener información de gastos
     const gastos = await Gasto.find({ 
       _id: { $in: gastosIds },
       usuario: req.usuario.id,
-      finca: fincaActiva // 🔥 FILTRO CRÍTICO
+      finca: fincaActiva
     });
     
-    // 🔥 VERIFICAR QUE TODOS LOS GASTOS PERTENEZCAN A LA FINCA ACTIVA
     if (gastos.length !== gastosIds.length) {
-      console.warn(`⚠️ Se encontraron ${gastos.length} de ${gastosIds.length} gastos solicitados para la finca ${fincaActiva}`);
+      console.warn(`⚠️ Se encontraron ${gastos.length} de ${gastosIds.length} gastos solicitados`);
     }
     
     let totalGastos = 0;
@@ -199,7 +179,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
         gastoId: gasto._id,
         descripcion: gasto.descripcion,
         valor: gasto.valor,
-        finca: gasto.finca // 🔥 INCLUIR FINCA EN DETALLE
+        finca: gasto.finca
       });
       
       // Calcular inventario usado
@@ -223,23 +203,15 @@ router.post('/procesar', verificarToken, async (req, res) => {
     
     console.log(`💸 Total egresos de ${fincaActiva}: $${totalGastos}`);
     
-    // 3️⃣ Calcular ingresos adicionales
-    const totalIngresosAdicionales = (ingresosAdicionales || []).reduce(
-      (sum, ing) => sum + (ing.valor || 0), 
-      0
-    );
-    
-    // 4️⃣ Crear liquidación - 🔥 INCLUIR FINCA
+    // 3️⃣ Crear liquidación
     const liquidacion = new Liquidacion({
       usuario: req.usuario.id,
       usuarioNombre: req.usuario.usuario,
-      finca: fincaActiva, // 🔥 AGREGAR CAMPO FINCA
+      finca: fincaActiva,
       cajaInicial: cajaInicial || 0,
-      ingresoRecogidas: totalRecogidas,
-      ingresosAdicionales: ingresosAdicionales || [],
-      totalIngresosAdicionales: totalIngresosAdicionales,
+      totalIngresos: totalEntradas,
+      entradasLiquidadas: entradasDetalle,
       totalEgresos: totalGastos,
-      recogidasLiquidadas: recogidasDetalle,
       gastosLiquidados: gastosDetalle,
       inventarioUsado: inventarioDetalle,
       notas: notas || ''
@@ -250,11 +222,11 @@ router.post('/procesar', verificarToken, async (req, res) => {
     
     console.log(`✅ Liquidación creada para finca ${fincaActiva}: ID ${liquidacion._id}`);
     
-    // 5️⃣ Marcar gastos como liquidados
-    const resultGastos = await Gasto.updateMany(
+    // 4️⃣ Marcar gastos como liquidados
+    await Gasto.updateMany(
       { 
         _id: { $in: gastosIds },
-        finca: fincaActiva // 🔥 VERIFICACIÓN ADICIONAL
+        finca: fincaActiva
       },
       { 
         $set: { 
@@ -265,24 +237,22 @@ router.post('/procesar', verificarToken, async (req, res) => {
       }
     );
     
-    console.log(`✅ ${resultGastos.modifiedCount} gastos marcados como liquidados`);
-    
-    // 6️⃣ Marcar recogidas como liquidadas en JC-Frutas
-    if (recogidasPagadas.length > 0) {
-      try {
-        await axios.post(
-          'https://jc-frutas.onrender.com/recogidas/marcar-liquidadas',
-          { 
-            ids: recogidasPagadas,
-            liquidacionId: liquidacion._id.toString(),
-            finca: fincaActiva // 🔥 ENVIAR FINCA PARA VERIFICACIÓN
-          }
-        );
-        console.log(`✅ ${recogidasPagadas.length} recogidas marcadas como liquidadas en JC-Frutas`);
-      } catch (error) {
-        console.error('Error al marcar recogidas como liquidadas:', error);
+    // 5️⃣ Marcar entradas como liquidadas
+    await Entrada.updateMany(
+      {
+        _id: { $in: entradasSeleccionadas },
+        finca: fincaActiva
+      },
+      {
+        $set: {
+          liquidada: true,
+          fechaLiquidacion: new Date(),
+          liquidacionId: liquidacion._id
+        }
       }
-    }
+    );
+    
+    console.log(`✅ ${entradas.length} entradas marcadas como liquidadas`);
     
     res.json({ 
       success: true, 
@@ -290,9 +260,9 @@ router.post('/procesar', verificarToken, async (req, res) => {
       liquidacion,
       fincaActiva: fincaActiva,
       resumen: {
-        totalRecogidas: recogidasDetalle.length,
+        totalEntradas: entradas.length,
         totalGastos: gastos.length,
-        valorRecogidas: totalRecogidas,
+        valorEntradas: totalEntradas,
         valorGastos: totalGastos,
         cajaFinal: liquidacion.cajaFinal
       }

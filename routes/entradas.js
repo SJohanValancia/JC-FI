@@ -44,7 +44,20 @@ const entradaSchema = new mongoose.Schema({
   ultimaModificacion: {
     type: Date,
     default: Date.now
+  },
+
+  liquidada: {
+    type: Boolean,
+    default: false
+  },
+  fechaLiquidacion: {
+    type: Date
+  },
+  liquidacionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Liquidacion'
   }
+
 });
 
 // Índice compuesto para búsquedas eficientes

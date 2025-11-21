@@ -674,6 +674,179 @@
 .alerta-stock-close:hover {
     background: rgba(146, 64, 14, 0.1);
 }
+
+/* Modal de Configuración de Alertas */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px var(--shadow-lg);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.modal-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--text-light);
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--bg-light);
+    color: var(--text-dark);
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.categoria-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: var(--bg-light);
+    border-radius: 12px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.categoria-item:hover {
+    background: #e8f5e9;
+    transform: translateX(5px);
+}
+
+.categoria-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 15px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.categoria-item label {
+    flex: 1;
+    margin: 0;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.btn-configurar {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.btn-configurar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn-guardar-config {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-guardar-config:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 124, 44, 0.4);
+}
+
+.btn-cancelar-config {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancelar-config:hover {
+    background: #4b5563;
+}
     </style>
 </head>
 <body>
@@ -737,7 +910,9 @@
                     <h1 class="greeting" id="greeting">¡Inventario!</h1>
                     <p class="time-info" id="timeInfo">Gestiona tus productos</p>
                 </div>
-                <div class="user-badge" id="userBadge">Usuario</div>
+                <div class="user-badge" id="userBadge" onclick="window.location.href='dashboard.html'" style="cursor: pointer;">
+    Cargando...
+</div>
             </div>
         </div>
 
@@ -811,6 +986,17 @@
                 Buscar y Filtrar
             </h2>
 
+            <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 class="card-title" style="margin-bottom: 0;">
+            <span>🔍</span>
+            Buscar y Filtrar
+        </h2>
+        <button class="btn-configurar" onclick="abrirConfiguracionAlertas()">
+            ⚙️ Configurar Alertas
+        </button>
+    </div>
+
             <div class="filters-container">
                 <div class="form-group">
                     <label for="buscarNombre">Buscar por nombre</label>
@@ -845,6 +1031,32 @@
         </div>
     </main>
 
+        <!-- Modal de Configuración de Alertas -->
+    <div class="modal-overlay" id="modalAlertas">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚙️ Configurar Alertas de Stock</h3>
+                <button class="modal-close" onclick="cerrarConfiguracionAlertas()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-light); margin-bottom: 20px;">
+                    Selecciona las categorías que NO quieres que generen alertas de stock bajo:
+                </p>
+                <div id="categoriasLista">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancelar-config" onclick="cerrarConfiguracionAlertas()">
+                    Cancelar
+                </button>
+                <button class="btn-guardar-config" onclick="guardarConfiguracionAlertas()">
+                    💾 Guardar Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+
 <script>
     const API_URL = 'https://jc-fi.onrender.com/api';
     let userData = null;
@@ -867,13 +1079,18 @@
 
 function inicializarInventario() {
     actualizarUsuario();
+    cargarConfiguracionAlertas(); // Agregar esta línea
     cargarInventario();
     cargarEstadisticas();
-    verificarStockBajo(); // Agregar esta línea
+    verificarStockBajo();
 }
 
-    async function verificarStockBajo() {
+
+async function verificarStockBajo() {
     try {
+        // Primero cerrar alerta existente
+        cerrarAlertaStock();
+        
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_URL}/inventario/alertas/stock-bajo`, {
             method: 'GET',
@@ -885,7 +1102,14 @@ function inicializarInventario() {
         const data = await response.json();
 
         if (data.success && data.alertas.length > 0) {
-            mostrarAlertaStock(data.alertas);
+            // Filtrar productos según categorías excluidas
+            const alertasFiltradas = data.alertas.filter(producto => 
+                !categoriasExcluidas.includes(producto.categoria)
+            );
+            
+            if (alertasFiltradas.length > 0) {
+                mostrarAlertaStock(alertasFiltradas);
+            }
         }
     } catch (error) {
         console.error('Error al verificar stock bajo:', error);
@@ -924,10 +1148,23 @@ function cerrarAlertaStock() {
     }
 }
 
-    function actualizarUsuario() {
-        document.getElementById('userBadge').textContent = userData.nombre;
-        document.getElementById('greeting').textContent = `¡Inventario de ${userData.nombre}!`;
+async function cargarFincaActual() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/auth/mis-fincas`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            const fincaActual = data.fincaActiva || 'Sin Finca';
+            document.getElementById('userBadge').textContent = fincaActual;
+        }
+    } catch (error) {
+        console.error('Error al cargar finca:', error);
+        document.getElementById('userBadge').textContent = 'Sin Finca';
     }
+}
 
     // Toggle Menu
     document.getElementById('menuToggle').addEventListener('click', () => {
@@ -1188,6 +1425,11 @@ function filtrarProductos() {
         }
     }
 
+    function actualizarUsuario() {
+    cargarFincaActual(); // Cargar la finca actual
+    document.getElementById('greeting').textContent = `¡Inventario de ${userData.nombre}!`;
+}
+
 async function actualizarProducto() {
     const nombre = document.getElementById('nombre').value.trim();
     const precioInput = document.getElementById('precio').value.trim();
@@ -1339,6 +1581,77 @@ async function eliminarProducto(id) {
             }, 1500);
         }
     }
+
+
+    // Configuración de Alertas
+let categoriasExcluidas = [];
+
+function cargarConfiguracionAlertas() {
+    const config = localStorage.getItem('alertas_excluidas_' + userData._id);
+    if (config) {
+        categoriasExcluidas = JSON.parse(config);
+    }
+}
+
+function abrirConfiguracionAlertas() {
+    const modal = document.getElementById('modalAlertas');
+    const lista = document.getElementById('categoriasLista');
+    
+    // Obtener todas las categorías únicas
+    const categorias = [...new Set(allProducts.map(p => p.categoria))].sort();
+    
+    if (categorias.length === 0) {
+        lista.innerHTML = '<p style="text-align: center; color: var(--text-light);">No hay categorías disponibles</p>';
+    } else {
+        lista.innerHTML = categorias.map(cat => `
+            <div class="categoria-item">
+                <input 
+                    type="checkbox" 
+                    id="cat_${cat}" 
+                    value="${cat}"
+                    ${categoriasExcluidas.includes(cat) ? 'checked' : ''}
+                >
+                <label for="cat_${cat}">${cat}</label>
+            </div>
+        `).join('');
+    }
+    
+    modal.classList.add('active');
+}
+
+function cerrarConfiguracionAlertas() {
+    const modal = document.getElementById('modalAlertas');
+    modal.classList.remove('active');
+}
+
+function guardarConfiguracionAlertas() {
+    const checkboxes = document.querySelectorAll('#categoriasLista input[type="checkbox"]');
+    categoriasExcluidas = [];
+    
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            categoriasExcluidas.push(checkbox.value);
+        }
+    });
+    
+    // Guardar en localStorage
+    localStorage.setItem('alertas_excluidas_' + userData._id, JSON.stringify(categoriasExcluidas));
+    
+    showAlert(`✅ Configuración guardada. ${categoriasExcluidas.length} categoría(s) excluida(s)`, 'success');
+    cerrarConfiguracionAlertas();
+    
+    // Recargar alertas
+    verificarStockBajo();
+}
+
+// Cerrar modal al hacer click fuera
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('modalAlertas');
+    if (e.target === modal) {
+        cerrarConfiguracionAlertas();
+    }
+});
+
 </script>
 </body>
 </html>

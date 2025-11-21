@@ -421,6 +421,121 @@
                 padding: 10px;
             }
         }
+
+        /* Estilos para las tarjetas de entradas */
+.entradas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.entrada-card {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    border-left: 5px solid var(--success);
+    box-shadow: 0 4px 15px var(--shadow);
+    transition: all 0.3s ease;
+    animation: slideInCard 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes slideInCard {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.entrada-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px var(--shadow-lg);
+}
+
+.entrada-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.entrada-card:hover::before {
+    left: 100%;
+}
+
+.entrada-description {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+}
+
+.entrada-amount {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--success);
+    margin: 10px 0;
+}
+
+.entrada-date {
+    color: var(--text-light);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+.entrada-meta {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.btn-delete {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ef4444;
+    color: white;
+    margin-top: 15px;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.btn-delete:active {
+    transform: translateY(0);
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+}
     </style>
 </head>
 <body>
@@ -551,39 +666,29 @@
         </div>
 
         <!-- Tabla de Entradas -->
-        <div class="tabla-container">
-            <h2 style="font-size: 22px; margin-bottom: 20px; color: var(--primary-dark);">
-                📋 Todas las Entradas
-            </h2>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p style="color: var(--text-light);">Cargando entradas...</p>
-            </div>
+<!-- Reemplaza toda la sección "Tabla de Entradas" (desde <div class="tabla-container"> hasta su cierre) por esto: -->
 
-            <div id="tablaContent">
-                <table id="tablaEntradas">
-                    <thead>
-                        <tr>
-                            <th>📅 Fecha</th>
-                            <th>📝 Descripción</th>
-                            <th>💰 Monto</th>
-                            <th>👤 Registrado Por</th>
-                            <th>🕐 Fecha Registro</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody">
-                        <!-- Se llenará dinámicamente -->
-                    </tbody>
-                </table>
+<!-- Grid de Entradas -->
+<div class="tabla-container">
+    <h2 style="font-size: 22px; margin-bottom: 20px; color: var(--primary-dark);">
+        📋 Todas las Entradas
+    </h2>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p style="color: var(--text-light);">Cargando entradas...</p>
+    </div>
 
-                <div id="emptyState" class="empty-state" style="display: none;">
-                    <div class="empty-icon">📊</div>
-                    <p style="font-size: 18px; font-weight: 600;">No se encontraron entradas</p>
-                    <p style="margin-top: 10px; color: var(--text-light);">Prueba ajustando los filtros o registra una nueva entrada</p>
-                </div>
-            </div>
-        </div>
+    <div id="entradasGrid" class="entradas-grid">
+        <!-- Se llenará dinámicamente -->
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">📊</div>
+        <p style="font-size: 18px; font-weight: 600;">No se encontraron entradas</p>
+        <p style="margin-top: 10px; color: var(--text-light);">Prueba ajustando los filtros o registra una nueva entrada</p>
+    </div>
+</div>
     </main>
 
     <script>
@@ -626,111 +731,113 @@
             }
         }
 
-        async function cargarTodasEntradas() {
-            const loading = document.getElementById('loading');
-            const tbody = document.getElementById('tbody');
-            const emptyState = document.getElementById('emptyState');
-            const tabla = document.getElementById('tablaEntradas');
+async function cargarTodasEntradas() {
+    const loading = document.getElementById('loading');
+    const emptyState = document.getElementById('emptyState');
+    const container = document.getElementById('entradasGrid');
 
-           loading.classList.add('active');
-            tbody.innerHTML = '';
+    loading.classList.add('active');
 
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/entradas`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/entradas`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-                const data = await response.json();
+        const data = await response.json();
 
-                if (data.success) {
-                    entradasData = data.entradas;
-                    
-                    if (entradasData.length === 0) {
-                        tabla.style.display = 'none';
-                        emptyState.style.display = 'block';
-                    } else {
-                        tabla.style.display = 'table';
-                        emptyState.style.display = 'none';
-                        mostrarEntradas(entradasData);
-                    }
-
-                    actualizarEstadisticas(entradasData);
-                } else {
-                    showAlert('Error al cargar entradas', 'error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error de conexión al cargar entradas', 'error');
-            } finally {
-                loading.classList.remove('active');
+        if (data.success) {
+            entradasData = data.entradas;
+            
+            if (entradasData.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                container.style.display = 'grid';
+                emptyState.style.display = 'none';
+                mostrarEntradas(entradasData);
             }
+
+            actualizarEstadisticas(entradasData);
+        } else {
+            showAlert('Error al cargar entradas', 'error');
         }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al cargar entradas', 'error');
+    } finally {
+        loading.classList.remove('active');
+    }
+}
 
         function mostrarEntradas(entradas) {
-            const tbody = document.getElementById('tbody');
-            tbody.innerHTML = '';
+    const container = document.getElementById('entradasGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    container.innerHTML = '';
 
-            if (entradas.length === 0) {
-                document.getElementById('tablaEntradas').style.display = 'none';
-                document.getElementById('emptyState').style.display = 'block';
-                return;
-            }
+    if (entradas.length === 0) {
+        container.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+    }
 
-            document.getElementById('tablaEntradas').style.display = 'table';
-            document.getElementById('emptyState').style.display = 'none';
+    container.style.display = 'grid';
+    emptyState.style.display = 'none';
 
-            entradas.forEach((entrada, index) => {
-                const fechaEntrada = new Date(entrada.fechaEntrada);
-                const fechaCreacion = new Date(entrada.fechaCreacion);
-                
-                const row = document.createElement('tr');
-                row.style.animationDelay = `${index * 0.05}s`;
-                
-                row.innerHTML = `
-                    <td class="fecha-cell">
-                        <strong style="color: var(--text-dark); display: block;">
-                            ${fechaEntrada.toLocaleDateString('es-CO', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric',
-                                timeZone: 'America/Bogota'
-                            })}
-                        </strong>
-                    </td>
-                    <td>
-                        <strong style="color: var(--text-dark);">${entrada.descripcion}</strong>
-                    </td>
-                    <td class="monto-cell">
-                        $${entrada.valor.toLocaleString('es-CO')}
-                    </td>
-                    <td>
-                        <span style="color: var(--text-dark);">
-                            👤 ${entrada.usuarioNombre}
-                        </span>
-                    </td>
-                    <td class="fecha-cell">
-                        ${fechaCreacion.toLocaleDateString('es-CO', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            timeZone: 'America/Bogota'
-                        })}
-                        <br>
-                        <small style="color: var(--text-light);">
-                            ${fechaCreacion.toLocaleTimeString('es-CO', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                timeZone: 'America/Bogota'
-                            })}
-                        </small>
-                    </td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-        }
+    entradas.forEach((entrada, index) => {
+        // Extraer fecha sin conversión de zona horaria
+        const fechaStr = entrada.fechaEntrada.split('T')[0];
+        const [year, month, day] = fechaStr.split('-');
+        const fechaEntrada = new Date(year, month - 1, day);
+        
+        const fechaCreacion = new Date(entrada.fechaCreacion);
+        
+        const card = document.createElement('div');
+        card.className = 'entrada-card';
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        card.innerHTML = `
+            <div class="entrada-description">${entrada.descripcion}</div>
+            <div class="entrada-amount">$${entrada.valor.toLocaleString('es-CO')}</div>
+            
+            <div class="entrada-date">
+                📅 ${fechaEntrada.toLocaleDateString('es-CO', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                })}
+            </div>
+            
+            <div class="entrada-meta">
+                <div class="entrada-date">
+                    👤 Registrado por: ${entrada.usuarioNombre}
+                </div>
+                <div class="entrada-date" style="margin-top: 5px;">
+                    🕐 ${fechaCreacion.toLocaleDateString('es-CO', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        timeZone: 'America/Bogota'
+                    })} - ${fechaCreacion.toLocaleTimeString('es-CO', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'America/Bogota'
+                    })}
+                </div>
+            </div>
+            
+            <button onclick="eliminarEntrada('${entrada._id}')" class="btn-delete">
+                🗑️ Eliminar Entrada
+            </button>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+
 
         function actualizarEstadisticas(entradas) {
             const total = entradas.length;
@@ -850,6 +957,53 @@
                 alert.remove();
             }, 5000);
         }
+
+        async function eliminarEntrada(id) {
+    const confirmacion = confirm('¿Estás seguro de que quieres eliminar esta entrada?\n\nEsta acción no se puede deshacer.');
+    
+    if (!confirmacion) return;
+
+    // Animar la tarjeta antes de eliminar
+    const cards = document.querySelectorAll('.entrada-card');
+    cards.forEach(card => {
+        if (card.querySelector(`[onclick*="${id}"]`)) {
+            card.style.animation = 'slideOut 0.4s ease forwards';
+        }
+    });
+
+    setTimeout(async () => {
+        const loading = document.getElementById('loading');
+        loading.classList.add('active');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/entradas/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('✅ Entrada eliminada exitosamente', 'success');
+                
+                // Actualizar datos locales
+                entradasData = entradasData.filter(e => e._id !== id);
+                mostrarEntradas(entradasData);
+                actualizarEstadisticas(entradasData);
+            } else {
+                showAlert(data.message || 'Error al eliminar entrada', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error de conexión al eliminar entrada', 'error');
+        } finally {
+            loading.classList.remove('active');
+        }
+    }, 400);
+}
 
         function cerrarSesion() {
             if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {

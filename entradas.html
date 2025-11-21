@@ -857,6 +857,11 @@ input:focus, select:focus {
 async function guardarEntrada(e) {
     e.preventDefault();
 
+    // AGREGAR ESTAS LÍNEAS:
+    const fechaEntrada = document.getElementById('fechaEntrada').value;
+    const descripcion = document.getElementById('descripcion').value.trim();
+    const valor = parseFloat(document.getElementById('valor').value);
+
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
     const saveBtn = document.getElementById('saveBtn');
@@ -885,20 +890,19 @@ async function guardarEntrada(e) {
             const method = editingEntradaId ? 'PUT' : 'POST';
 
             // Corregir zona horaria
-            const fechaLocal = new Date(fechaEntrada + 'T12:00:00');
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    fechaEntrada: fechaLocal.toISOString(),
-                    descripcion,
-                    valor
-                })
-            });
+// Enviar la fecha en formato YYYY-MM-DD directamente
+const response = await fetch(url, {
+    method: method,
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+        fechaEntrada: fechaEntrada, // ✅ Enviar el string directamente
+        descripcion,
+        valor
+    })
+});
 
             const data = await response.json();
 
@@ -975,9 +979,13 @@ async function guardarEntrada(e) {
 
                 const fragment = document.createDocumentFragment();
                 
-                entradas.forEach(entrada => {
-                    const fechaEntrada = new Date(entrada.fechaEntrada);
-                    const fechaCreacion = new Date(entrada.fechaCreacion);
+entradas.forEach(entrada => {
+    // Extraer solo la fecha sin conversión de zona horaria
+    const fechaStr = entrada.fechaEntrada.split('T')[0];
+    const [year, month, day] = fechaStr.split('-');
+    const fechaEntrada = new Date(year, month - 1, day);
+    
+    const fechaCreacion = new Date(entrada.fechaCreacion);
                     
                     const card = document.createElement('div');
                     card.className = 'entrada-card';
