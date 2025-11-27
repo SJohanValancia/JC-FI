@@ -307,8 +307,7 @@ router.get('/gastos-pendientes', verificarToken, async (req, res) => {
   }
 });
 
-// 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CON ENTRADAS
-// 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CORREGIDA CON CAJA INICIAL AUTOMÁTICA
+// 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CON MOVIMIENTOS DE CAJA
 router.post('/procesar', verificarToken, async (req, res) => {
   try {
     const { 
@@ -349,7 +348,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
       console.log(`💼 Caja inicial desde última liquidación: $${cajaInicial}`);
     }
     
-    // Sumar movimientos de caja posteriores a la última liquidación
+    // 🔥 OBTENER MOVIMIENTOS DE CAJA POSTERIORES A LA ÚLTIMA LIQUIDACIÓN
     const fechaUltimaLiquidacion = ultimaLiquidacion ? ultimaLiquidacion.fecha : new Date(0);
     const movimientos = await MovimientoCaja.find({
       usuario: req.usuario.id,
@@ -357,15 +356,26 @@ router.post('/procesar', verificarToken, async (req, res) => {
       fecha: { $gt: fechaUltimaLiquidacion }
     });
     
+    // Procesar movimientos y agregarlos a la caja inicial
+    const movimientosDetalle = [];
     movimientos.forEach(mov => {
       if (mov.tipo === 'ingreso') {
         cajaInicial += mov.valor;
       } else {
         cajaInicial -= mov.valor;
       }
+      
+      // Guardar detalle del movimiento para incluirlo en la liquidación
+      movimientosDetalle.push({
+        tipo: mov.tipo,
+        descripcion: mov.descripcion,
+        valor: mov.valor,
+        fecha: mov.fecha,
+        movimientoId: mov._id
+      });
     });
     
-    console.log(`💰 Caja inicial con movimientos: $${cajaInicial}`);
+    console.log(`💰 Caja inicial con ${movimientos.length} movimientos: $${cajaInicial}`);
     
     // 1️⃣ Obtener información de entradas
     const entradas = await Entrada.find({
@@ -440,12 +450,13 @@ router.post('/procesar', verificarToken, async (req, res) => {
       usuario: req.usuario.id,
       usuarioNombre: req.usuario.usuario,
       finca: fincaActiva,
-      cajaInicial: cajaInicial, // 🔥 USAR CAJA INICIAL CALCULADA
+      cajaInicial: cajaInicial,
       totalIngresos: totalEntradas,
       entradasLiquidadas: entradasDetalle,
       totalEgresos: totalGastos,
       gastosLiquidados: gastosDetalle,
       inventarioUsado: inventarioDetalle,
+      movimientosCaja: movimientosDetalle, // 🔥 INCLUIR MOVIMIENTOS
       notas: notas || ''
     });
     
@@ -487,6 +498,22 @@ router.post('/procesar', verificarToken, async (req, res) => {
     
     console.log(`✅ ${entradas.length} entradas marcadas como liquidadas`);
     
+    // 6️⃣ 🔥 MARCAR MOVIMIENTOS COMO LIQUIDADOS (OPCIONAL)
+    if (movimientos.length > 0) {
+      await MovimientoCaja.updateMany(
+        {
+          _id: { $in: movimientos.map(m => m._id) }
+        },
+        {
+          $set: {
+            liquidado: true,
+            liquidacionId: liquidacion._id
+          }
+        }
+      );
+      console.log(`✅ ${movimientos.length} movimientos de caja incluidos en liquidación`);
+    }
+    
     res.json({ 
       success: true, 
       message: `Liquidación procesada exitosamente para ${fincaActiva}`,
@@ -495,6 +522,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
       resumen: {
         totalEntradas: entradas.length,
         totalGastos: gastos.length,
+        totalMovimientos: movimientos.length,
         cajaInicial: cajaInicial,
         valorEntradas: totalEntradas,
         valorGastos: totalGastos,
@@ -592,11 +620,9 @@ router.get('/:id', verificarToken, async (req, res) => {
   }
 });
 
-// 🔥 OBTENER ESTADÍSTICAS DE LIQUIDACIONES
-// 🔥 OBTENER ESTADÍSTICAS DE LIQUIDACIONES - FILTRADO POR FINCA
+// 🔥 OBTENER ESTADÍSTICAS DE LIQUIDACIONES - CON MOVIMIENTOS
 router.get('/stats/resumen', verificarToken, async (req, res) => {
   try {
-    // 🔥 OBTENER LA FINCA ACTIVA DEL USUARIO
     const usuarioData = await User.findById(req.usuario.id);
     if (!usuarioData || !usuarioData.fincaActiva) {
       return res.json({ 
@@ -606,7 +632,10 @@ router.get('/stats/resumen', verificarToken, async (req, res) => {
           totalIngresos: 0,
           totalEgresos: 0,
           promedioIngreso: 0,
-          promedioEgreso: 0
+          promedioEgreso: 0,
+          totalMovimientos: 0,
+          totalRetiros: 0,
+          totalIngresosMovimientos: 0
         },
         message: 'No hay finca activa seleccionada'
       });
@@ -615,10 +644,31 @@ router.get('/stats/resumen', verificarToken, async (req, res) => {
     const fincaActiva = usuarioData.fincaActiva;
     console.log('📊 Calculando estadísticas para finca:', fincaActiva);
     
-    // 🔥 FILTRAR POR USUARIO Y FINCA ACTIVA
     const liquidaciones = await Liquidacion.find({ 
       usuario: req.usuario.id,
-      finca: fincaActiva // 🔥 AGREGAR FILTRO POR FINCA
+      finca: fincaActiva
+    });
+    
+    // 🔥 CALCULAR ESTADÍSTICAS DE MOVIMIENTOS
+    let totalMovimientos = 0;
+    let totalRetiros = 0;
+    let totalIngresosMovimientos = 0;
+    let valorRetiros = 0;
+    let valorIngresosMovimientos = 0;
+    
+    liquidaciones.forEach(liq => {
+      if (liq.movimientosCaja && liq.movimientosCaja.length > 0) {
+        liq.movimientosCaja.forEach(mov => {
+          totalMovimientos++;
+          if (mov.tipo === 'retiro') {
+            totalRetiros++;
+            valorRetiros += mov.valor;
+          } else {
+            totalIngresosMovimientos++;
+            valorIngresosMovimientos += mov.valor;
+          }
+        });
+      }
     });
     
     const stats = {
@@ -627,7 +677,13 @@ router.get('/stats/resumen', verificarToken, async (req, res) => {
       totalEgresos: liquidaciones.reduce((sum, l) => sum + l.totalEgresos, 0),
       promedioIngreso: 0,
       promedioEgreso: 0,
-      fincaActiva: fincaActiva // 🔥 INCLUIR FINCA EN LA RESPUESTA
+      fincaActiva: fincaActiva,
+      // 🔥 ESTADÍSTICAS DE MOVIMIENTOS
+      totalMovimientos: totalMovimientos,
+      totalRetiros: totalRetiros,
+      totalIngresosMovimientos: totalIngresosMovimientos,
+      valorRetiros: valorRetiros,
+      valorIngresosMovimientos: valorIngresosMovimientos
     };
     
     if (stats.totalLiquidaciones > 0) {
@@ -647,5 +703,4 @@ router.get('/stats/resumen', verificarToken, async (req, res) => {
     });
   }
 });
-
 module.exports = router;

@@ -29,7 +29,7 @@ const liquidacionSchema = new mongoose.Schema({
   cajaFinal: { 
     type: Number, 
     required: true,
-    default: 0  // 🔥 Agregado default
+    default: 0
   },
   
   // Ingresos - AHORA DESDE ENTRADAS
@@ -65,6 +65,15 @@ const liquidacionSchema = new mongoose.Schema({
     cantidad: Number,
     valorUnitario: Number,
     valorTotal: Number
+  }],
+  
+  // 🔥 NUEVO: MOVIMIENTOS DE CAJA INCLUIDOS EN LA LIQUIDACIÓN
+  movimientosCaja: [{
+    tipo: { type: String, enum: ['ingreso', 'retiro'] },
+    descripcion: String,
+    valor: Number,
+    fecha: Date,
+    movimientoId: { type: mongoose.Schema.Types.ObjectId, ref: 'MovimientoCaja' }
   }],
   
   // Metadatos
