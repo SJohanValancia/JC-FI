@@ -397,7 +397,7 @@
     </style>
 </head>
 <body>
-    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
+    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver a gestion de gastos</button>
 
     <div class="container">
         <div class="header">
@@ -407,6 +407,13 @@
 
         <!-- Estadísticas Generales -->
         <div class="stats-grid" id="statsContainer">
+
+                <div class="stat-card" style="border-left-color: #28a745;">
+        <div class="stat-icon">💼</div>
+        <div class="stat-value" id="cajaActual" style="color: #28a745;">$0</div>
+        <div class="stat-label">Caja Actual</div>
+    </div>
+
             <div class="stat-card">
                 <div class="stat-icon">📊</div>
                 <div class="stat-value" id="totalLiquidaciones">0</div>
@@ -427,6 +434,9 @@
                 <div class="stat-value" id="promedioIngreso">$0</div>
                 <div class="stat-label">Promedio Ingresos</div>
             </div>
+
+            
+
         </div>
 
         <!-- Filtros -->
@@ -462,7 +472,39 @@
 
             cargarHistorial();
             cargarEstadisticas();
+             cargarCajaActual();
         });
+
+        async function cargarCajaActual() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/liquidacion/caja-actual`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const cajaActual = data.cajaActual || 0;
+            document.getElementById('cajaActual').textContent = 
+                '$' + cajaActual.toLocaleString('es-CO');
+            
+            // Cambiar color según si hay dinero o no
+            const cajaElement = document.getElementById('cajaActual');
+            if (cajaActual > 0) {
+                cajaElement.style.color = '#28a745';
+            } else if (cajaActual < 0) {
+                cajaElement.style.color = '#dc3545';
+            } else {
+                cajaElement.style.color = '#6c757d';
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar caja actual:', error);
+    }
+}
 
         async function cargarHistorial() {
             const loading = document.getElementById('loading');

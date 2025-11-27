@@ -308,10 +308,10 @@ router.get('/gastos-pendientes', verificarToken, async (req, res) => {
 });
 
 // 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CON ENTRADAS
+// 🔥 PROCESAR LIQUIDACIÓN - VERSIÓN CORREGIDA CON CAJA INICIAL AUTOMÁTICA
 router.post('/procesar', verificarToken, async (req, res) => {
   try {
     const { 
-      cajaInicial,
       entradasSeleccionadas,
       gastosIds,
       notas
@@ -335,6 +335,37 @@ router.post('/procesar', verificarToken, async (req, res) => {
         message: 'Datos de liquidación inválidos'
       });
     }
+    
+    // 🔥 CALCULAR CAJA INICIAL (caja final de la liquidación anterior)
+    const ultimaLiquidacion = await Liquidacion.findOne({
+      usuario: req.usuario.id,
+      finca: fincaActiva
+    }).sort({ fecha: -1 });
+    
+    let cajaInicial = 0;
+    
+    if (ultimaLiquidacion) {
+      cajaInicial = ultimaLiquidacion.cajaFinal;
+      console.log(`💼 Caja inicial desde última liquidación: $${cajaInicial}`);
+    }
+    
+    // Sumar movimientos de caja posteriores a la última liquidación
+    const fechaUltimaLiquidacion = ultimaLiquidacion ? ultimaLiquidacion.fecha : new Date(0);
+    const movimientos = await MovimientoCaja.find({
+      usuario: req.usuario.id,
+      finca: fincaActiva,
+      fecha: { $gt: fechaUltimaLiquidacion }
+    });
+    
+    movimientos.forEach(mov => {
+      if (mov.tipo === 'ingreso') {
+        cajaInicial += mov.valor;
+      } else {
+        cajaInicial -= mov.valor;
+      }
+    });
+    
+    console.log(`💰 Caja inicial con movimientos: $${cajaInicial}`);
     
     // 1️⃣ Obtener información de entradas
     const entradas = await Entrada.find({
@@ -409,7 +440,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
       usuario: req.usuario.id,
       usuarioNombre: req.usuario.usuario,
       finca: fincaActiva,
-      cajaInicial: cajaInicial || 0,
+      cajaInicial: cajaInicial, // 🔥 USAR CAJA INICIAL CALCULADA
       totalIngresos: totalEntradas,
       entradasLiquidadas: entradasDetalle,
       totalEgresos: totalGastos,
@@ -422,6 +453,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
     await liquidacion.save();
     
     console.log(`✅ Liquidación creada para finca ${fincaActiva}: ID ${liquidacion._id}`);
+    console.log(`💼 Caja Final: $${liquidacion.cajaFinal}`);
     
     // 4️⃣ Marcar gastos como liquidados
     await Gasto.updateMany(
@@ -463,6 +495,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
       resumen: {
         totalEntradas: entradas.length,
         totalGastos: gastos.length,
+        cajaInicial: cajaInicial,
         valorEntradas: totalEntradas,
         valorGastos: totalGastos,
         cajaFinal: liquidacion.cajaFinal

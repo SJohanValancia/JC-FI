@@ -536,9 +536,75 @@
         transform: translateX(-100px);
     }
 }
+
+/* Botón Menu Toggle */
+.menu-toggle {
+    display: none;
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+.menu-toggle:hover {
+    background: var(--success-dark);
+    transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    table {
+        font-size: 12px;
+    }
+
+    th, td {
+        padding: 10px;
+    }
+
+    .entradas-grid {
+        grid-template-columns: 1fr;
+    }
+}
     </style>
 </head>
 <body>
+
+    <!-- Header -->
+<div class="header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <h1 class="greeting">📊 Historial de Entradas</h1>
+    <p style="opacity: 0.9; margin-bottom: 15px;">Visualiza y analiza todas tus entradas de dinero</p>
+    <div class="user-badge" id="fincaBadge" onclick="window.location.href='dashboard.html'">
+        Cargando...
+    </div>
+</div>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -546,40 +612,48 @@
             <div class="sidebar-title">JC-Fi</div>
         </div>
 
-        <nav>
+         <nav>
             <a href="dashboard.html" class="menu-item">
-                <span>💰</span>
+                <span class="menu-icon">💰</span>
                 <span>Gastos</span>
             </a>
             <a href="inventario.html" class="menu-item">
-                <span>📦</span>
+                <span class="menu-icon">📦</span>
                 <span>Inventario</span>
             </a>
-            <a href="entradas.html" class="menu-item">
-                <span>💵</span>
+            <a href="entradas.html" class="menu-item ">
+                <span class="menu-icon">💵</span>
                 <span>Entradas de Dinero</span>
             </a>
-            <a href="historial-entradas.html" class="menu-item active">
-                <span>📊</span>
+            <a href="historial-entradas.html" class="menu-item active ">
+                <span class="menu-icon">📊</span>
                 <span>Historial de Entradas</span>
             </a>
             <a href="liquidacion-diaria.html" class="menu-item">
-                <span>💰</span>
+                <span class="menu-icon">💰</span>
                 <span>Liquidación Diaria</span>
             </a>
             <a href="historial-liquidaciones.html" class="menu-item">
-                <span>📋</span>
+                <span class="menu-icon">📋</span>
                 <span>Historial Liquidaciones</span>
             </a>
             <a href="cultivos.html" class="menu-item">
-                <span>🌾</span>
+                <span class="menu-icon">🌾</span>
                 <span>Gestión de Cultivos</span>
             </a>
             <a href="historial-cultivos.html" class="menu-item">
-                <span>📊</span>
+                <span class="menu-icon">📊</span>
                 <span>Historial de Cultivos</span>
             </a>
+
+                                    <a href="reportes-gastos.html" class="menu-item ">
+                <span class="menu-icon">📊</span>
+                <span>historial de gastos</span>
+            </a>
+
+
         </nav>
+
 
         <button class="logout-btn" onclick="cerrarSesion()">
             🚪 Cerrar Sesión
@@ -1027,6 +1101,38 @@ async function cargarTodasEntradas() {
                 });
             });
         });
+
+        // Cerrar sidebar al hacer clic fuera de él (solo en móvil)
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    const isMobile = window.innerWidth <= 768;
+    
+    // Solo ejecutar en móvil y si el sidebar está activo
+    if (isMobile && sidebar.classList.contains('active')) {
+        // Verificar si el clic fue fuera del sidebar y no en el botón toggle
+        if (!sidebar.contains(event.target) && event.target !== menuToggle) {
+            sidebar.classList.remove('active');
+        }
+    }
+});
+
+// También cerrar al hacer clic en los items del menú (para mejor UX)
+document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            document.getElementById('sidebar').classList.remove('active');
+        }
+    });
+});
+
+// Toggle del menú móvil
+document.getElementById('menuToggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('sidebar').classList.toggle('active');
+});
+
     </script>
 </body>
 </html>

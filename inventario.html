@@ -857,43 +857,48 @@
             <div class="sidebar-title">JC-Fi</div>
         </div>
 
-        <nav>
+ <nav>
             <a href="dashboard.html" class="menu-item">
                 <span class="menu-icon">💰</span>
                 <span>Gastos</span>
             </a>
-            <a href="inventario.html" class="menu-item active">
+            <a href="inventario.html" class="menu-item active ">
                 <span class="menu-icon">📦</span>
                 <span>Inventario</span>
             </a>
+            <a href="entradas.html" class="menu-item ">
+                <span class="menu-icon">💵</span>
+                <span>Entradas de Dinero</span>
+            </a>
+            <a href="historial-entradas.html" class="menu-item">
+                <span class="menu-icon">📊</span>
+                <span>Historial de Entradas</span>
+            </a>
+            <a href="liquidacion-diaria.html" class="menu-item">
+                <span class="menu-icon">💰</span>
+                <span>Liquidación Diaria</span>
+            </a>
+            <a href="historial-liquidaciones.html" class="menu-item">
+                <span class="menu-icon">📋</span>
+                <span>Historial Liquidaciones</span>
+            </a>
+            <a href="cultivos.html" class="menu-item">
+                <span class="menu-icon">🌾</span>
+                <span>Gestión de Cultivos</span>
+            </a>
+            <a href="historial-cultivos.html" class="menu-item">
+                <span class="menu-icon">📊</span>
+                <span>Historial de Cultivos</span>
+            </a>
 
-    <a href="reportes-gastos.html" class="menu-item">
-        <span class="menu-icon">📦</span>
-        <span>historial de gastos </span>
-    </a>
+                                    <a href="reportes-gastos.html" class="menu-item ">
+                <span class="menu-icon">📊</span>
+                <span>historial de gastos</span>
+            </a>
 
-    <!-- Después del enlace de Historial recogidas -->
-<a href="liquidacion-diaria.html" class="menu-item">
-    <span class="menu-icon">💰</span>
-    <span>Liquidación Diaria</span>
-</a>
-
-<a href="historial-liquidaciones.html" class="menu-item">
-    <span class="menu-icon">📋</span>
-    <span>Historial Liquidaciones</span>
-</a>
-
-<!-- Dentro del <nav> del sidebar -->
-<a href="cultivos.html" class="menu-item">
-    <span class="menu-icon">🌾</span>
-    <span>Gestión de Cultivos</span>
-</a>
-<a href="historial-cultivos.html" class="menu-item">
-    <span class="menu-icon">📊</span>
-    <span>Historial de Cultivos</span>
-</a>
 
         </nav>
+
 
         <button class="logout-btn" onclick="cerrarSesion()">
             🚪 Cerrar Sesión
@@ -1650,6 +1655,31 @@ document.addEventListener('click', (e) => {
     if (e.target === modal) {
         cerrarConfiguracionAlertas();
     }
+});
+
+// Cerrar sidebar al hacer clic fuera de él (solo en móvil)
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    const isMobile = window.innerWidth <= 768;
+    
+    // Solo ejecutar en móvil y si el sidebar está activo
+    if (isMobile && sidebar.classList.contains('active')) {
+        // Verificar si el clic fue fuera del sidebar y no en el botón toggle
+        if (!sidebar.contains(event.target) && event.target !== menuToggle) {
+            sidebar.classList.remove('active');
+        }
+    }
+});
+
+// También cerrar al hacer clic en los items del menú (para mejor UX)
+document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            document.getElementById('sidebar').classList.remove('active');
+        }
+    });
 });
 
 </script>

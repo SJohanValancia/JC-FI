@@ -577,7 +577,7 @@
     </style>
 </head>
 <body>
-    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
+    <button class="volver-btn" onclick="window.location.href='dashboard.html'">← Volver a gestion de gastos</button>
 
     <div class="container">
         <div class="header">
@@ -941,30 +941,16 @@ async function procesarLiquidacion() {
 
     try {
         const token = localStorage.getItem('token');
-        const cajaInicial = Number(document.getElementById('cajaInicial').value) || 0;
         const notas = document.getElementById('notasLiquidacion').value.trim();
-        const entradasIds = entradasPendientes.map(e => e._id);
-        const gastosIds = gastosPendientes.map(g => g._id).filter(Boolean);
-        const totalEntradas = entradasPendientes.reduce((s, e) => s + (Number(e.valor) || 0), 0);
-        const totalIngresosAd = ingresosAdicionales.reduce((s, x) => s + (Number(x.valor) || 0), 0);
-        const totalIngresos = totalEntradas + totalIngresosAd;
-        const totalEgresos = gastosPendientes.reduce((s, g) => s + (Number(g.valorTotal || g.valor) || 0), 0);
-        const cajaFinal = cajaInicial + totalIngresos - totalEgresos;
-
+        
+        // 🔥 DATOS A ENVIAR (SIN cajaInicial - el backend lo calcula)
         const datosLiquidacion = {
-            cajaInicial: Number(cajaInicial),
-            entradasSeleccionadas: entradasIds,
-            ingresosAdicionales: ingresosAdicionales.map(ing => ({
-                descripcion: String(ing.descripcion || ''),
-                valor: Number(ing.valor) || 0
-            })),
-            gastosIds: gastosIds,
-            totalEntradas: Number(totalEntradas.toFixed(2)),
-            totalIngresos: Number(totalIngresos.toFixed(2)),
-            totalEgresos: Number(totalEgresos.toFixed(2)),
-            cajaFinal: Number(cajaFinal.toFixed(2)),
+            entradasSeleccionadas: entradasPendientes.map(e => e._id),
+            gastosIds: gastosPendientes.map(g => g._id).filter(Boolean),
             notas: notas
         };
+
+        console.log('📤 Enviando liquidación:', datosLiquidacion);
 
         const response = await fetch(`${API_URL}/liquidacion/procesar`, {
             method: 'POST',
@@ -980,6 +966,7 @@ async function procesarLiquidacion() {
         try {
             data = text ? JSON.parse(text) : {};
         } catch (e) {
+            console.error('Error parseando respuesta:', e);
             data = { success: response.ok, message: text || 'Respuesta no JSON del servidor' };
         }
 
@@ -988,10 +975,18 @@ async function procesarLiquidacion() {
             throw new Error(msg);
         }
 
+        console.log('✅ Liquidación procesada:', data);
+        
         showAlert('✅ Liquidación procesada exitosamente', 'success');
+        
+        // Mostrar resumen si está disponible
+        if (data.resumen) {
+            console.log('💼 Resumen:', data.resumen);
+        }
+        
         setTimeout(() => {
             window.location.href = 'historial-liquidaciones.html';
-        }, 1200);
+        }, 1500);
 
     } catch (error) {
         console.error('❌ Error al procesar liquidación:', error);
@@ -1000,7 +995,6 @@ async function procesarLiquidacion() {
         btnProcesar.textContent = '✅ Procesar Liquidación';
     }
 }
-
 // 🔥 CONTROL DE CAJA - MODAL
 function abrirControlCaja() {
     document.getElementById('modalControlCaja').style.display = 'flex';

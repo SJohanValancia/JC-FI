@@ -28,7 +28,8 @@ const liquidacionSchema = new mongoose.Schema({
   },
   cajaFinal: { 
     type: Number, 
-    required: true 
+    required: true,
+    default: 0  // 🔥 Agregado default
   },
   
   // Ingresos - AHORA DESDE ENTRADAS
@@ -80,9 +81,17 @@ const liquidacionSchema = new mongoose.Schema({
   }
 });
 
-// Método para calcular totales
+// 🔥 MÉTODO PARA CALCULAR TOTALES CORRECTAMENTE
 liquidacionSchema.methods.calcularTotales = function() {
+  // Caja Final = Caja Inicial + Total Ingresos - Total Egresos
   this.cajaFinal = this.cajaInicial + this.totalIngresos - this.totalEgresos;
+  
+  // Log para debugging
+  console.log(`💼 Cálculo de caja:`);
+  console.log(`   Caja Inicial: $${this.cajaInicial}`);
+  console.log(`   + Ingresos: $${this.totalIngresos}`);
+  console.log(`   - Egresos: $${this.totalEgresos}`);
+  console.log(`   = Caja Final: $${this.cajaFinal}`);
 };
 
 module.exports = mongoose.model('Liquidacion', liquidacionSchema);

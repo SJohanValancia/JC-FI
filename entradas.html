@@ -657,7 +657,15 @@ input:focus, select:focus {
             <a href="historial-cultivos.html" class="menu-item">
                 <span class="menu-icon">📊</span>
                 <span>Historial de Cultivos</span>
+            
             </a>
+
+                                    <a href="reportes-gastos.html" class="menu-item ">
+                <span class="menu-icon">📊</span>
+                <span>historial de gastos</span>
+            </a>
+
+
         </nav>
 
         <button class="logout-btn" onclick="cerrarSesion()">
@@ -857,95 +865,84 @@ input:focus, select:focus {
 async function guardarEntrada(e) {
     e.preventDefault();
 
-    // AGREGAR ESTAS LÍNEAS:
     const fechaEntrada = document.getElementById('fechaEntrada').value;
     const descripcion = document.getElementById('descripcion').value.trim();
     const valor = parseFloat(document.getElementById('valor').value);
 
+    if (!fechaEntrada || !descripcion || !valor || valor <= 0) {
+        showAlert('Por favor completa todos los campos correctamente', 'error');
+        return;
+    }
+
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
     const saveBtn = document.getElementById('saveBtn');
+    const loading = document.getElementById('loading');
 
-    // Mostrar loader en el botón
+    // Mostrar loader
     btnText.style.display = 'none';
     btnLoader.style.display = 'inline-block';
     saveBtn.disabled = true;
+    loading.classList.add('active');
 
-        if (!fechaEntrada || !descripcion || !valor || valor <= 0) {
-            showAlert('Por favor completa todos los campos correctamente', 'error');
-            return;
-        }
-
-        const loading = document.getElementById('loading');
+    try {
+        const token = localStorage.getItem('token');
+        const url = editingEntradaId 
+            ? `${API_URL}/entradas/${editingEntradaId}`
+            : `${API_URL}/entradas`;
         
-        loading.classList.add('active');
-        saveBtn.disabled = true;
+        const method = editingEntradaId ? 'PUT' : 'POST';
 
-        try {
-            const token = localStorage.getItem('token');
-            const url = editingEntradaId 
-                ? `${API_URL}/entradas/${editingEntradaId}`
-                : `${API_URL}/entradas`;
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                fechaEntrada: fechaEntrada,
+                descripcion,
+                valor
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert(
+                editingEntradaId 
+                    ? '✅ Entrada actualizada exitosamente' 
+                    : '✅ Entrada registrada exitosamente', 
+                'success'
+            );
             
-            const method = editingEntradaId ? 'PUT' : 'POST';
+            // Limpiar solo los campos del formulario (NO uses reset())
+            document.getElementById('fechaEntrada').value = new Date().toISOString().split('T')[0];
+            document.getElementById('descripcion').value = '';
+            document.getElementById('valor').value = '';
+            document.getElementById('valorFormateado').style.display = 'none';
+            document.getElementById('contadorCaracteres').textContent = '0';
+            
+            editingEntradaId = null;
+            btnText.textContent = '💾 Guardar Entrada';
 
-            // Corregir zona horaria
-// Enviar la fecha en formato YYYY-MM-DD directamente
-const response = await fetch(url, {
-    method: method,
-    headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-        fechaEntrada: fechaEntrada, // ✅ Enviar el string directamente
-        descripcion,
-        valor
-    })
-});
-
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert(
-                    editingEntradaId 
-                        ? '✅ Entrada actualizada exitosamente' 
-                        : '✅ Entrada registrada exitosamente', 
-                    'success'
-                );
-                
-                // Limpiar formulario
-                document.getElementById('formEntrada').reset();
-                const hoy = new Date().toISOString().split('T')[0];
-                document.getElementById('fechaEntrada').value = hoy;
-                
-                editingEntradaId = null;
-                saveBtn.textContent = '💾 Guardar Entrada';
-
-                // Recargar datos
-                cargarEntradas();
-                cargarEstadisticas();
-            } else {
-                showAlert(data.message || 'Error al guardar entrada', 'error');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('Error de conexión al guardar entrada', 'error');
-        } finally {
-            loading.classList.remove('active');
-            saveBtn.disabled = false;
+            // Recargar datos
+            cargarEntradas();
+            cargarEstadisticas();
+        } else {
+            showAlert(data.message || 'Error al guardar entrada', 'error');
         }
-
-            // Al final, restaurar botón
-    setTimeout(() => {
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al guardar entrada', 'error');
+    } finally {
+        // Restaurar botón
         btnText.style.display = 'inline';
         btnLoader.style.display = 'none';
         saveBtn.disabled = false;
-    }, 500);
-
-
+        loading.classList.remove('active');
     }
-
+}
     async function cargarEntradas() {
         const container = document.getElementById('entradasList');
         const loading = document.getElementById('loading');
@@ -1092,7 +1089,7 @@ entradas.forEach(entrada => {
                 document.getElementById('valor').value = entrada.valor;
                 
                 const saveBtn = document.getElementById('saveBtn');
-                saveBtn.textContent = '💾 Actualizar Entrada';
+                document.getElementById('btnText').textContent = '💾 Actualizar Entrada';
 
                 document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
                 showAlert('Editando entrada. Modifica los campos y guarda', 'success');
@@ -1209,6 +1206,31 @@ document.getElementById('valor').addEventListener('input', function() {
     } else {
         formateado.style.display = 'none';
     }
+});
+
+// Cerrar sidebar al hacer clic fuera de él (solo en móvil)
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    const isMobile = window.innerWidth <= 768;
+    
+    // Solo ejecutar en móvil y si el sidebar está activo
+    if (isMobile && sidebar.classList.contains('active')) {
+        // Verificar si el clic fue fuera del sidebar y no en el botón toggle
+        if (!sidebar.contains(event.target) && event.target !== menuToggle) {
+            sidebar.classList.remove('active');
+        }
+    }
+});
+
+// También cerrar al hacer clic en los items del menú (para mejor UX)
+document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            document.getElementById('sidebar').classList.remove('active');
+        }
+    });
 });
     </script>
 </body>
