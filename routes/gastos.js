@@ -55,7 +55,6 @@ router.get('/:id', verificarToken, async (req, res) => {
 });
 
 // Crear gasto (único) con descuento de inventario
-// Crear gasto (único) con descuento de inventario
 router.post('/', verificarToken, async (req, res) => {
   try {
     const { fechaGasto, descripcion, valor, productosInventario } = req.body;
@@ -87,9 +86,23 @@ router.post('/', verificarToken, async (req, res) => {
       }
     }
     
-    // Crear el gasto con fecha personalizada o fecha actual
+    // 🔥 CREAR FECHA CORRECTAMENTE - Parseando como fecha local en Colombia
+    let fechaGastoFinal;
+    if (fechaGasto) {
+      // Extraer año, mes, día del string "2024-01-15"
+      const [year, month, day] = fechaGasto.split('-').map(Number);
+      // Crear fecha en hora local de Colombia (UTC-5)
+      fechaGastoFinal = new Date(year, month - 1, day, 12, 0, 0);
+    } else {
+      fechaGastoFinal = new Date();
+    }
+    
+    console.log('📅 Fecha recibida:', fechaGasto);
+    console.log('📅 Fecha procesada:', fechaGastoFinal);
+    
+    // Crear el gasto
     const nuevoGasto = await Gasto.create({
-      fechaGasto: fechaGasto ? new Date(fechaGasto) : new Date(),
+      fechaGasto: fechaGastoFinal,
       descripcion,
       valor,
       productosInventario: productosInventario || [],

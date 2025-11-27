@@ -1987,14 +1987,13 @@ async function guardarGastos() {
         }
         
         // 🔥 CORREGIR ZONA HORARIA - Agregar la hora local
-        const fechaLocal = new Date(fecha + 'T12:00:00');
-        
-        gastos.push({
-            fechaGasto: fechaLocal.toISOString(), // 🔥 Enviar como ISO con hora del mediodía
-            descripcion: descripcion,
-            valor: valor,
-            productosInventario: productosDelGasto
-        });
+// 🔥 ENVIAR FECHA SIN CONVERSIÓN (solo la fecha en formato YYYY-MM-DD)
+gastos.push({
+    fechaGasto: fecha, // 🔥 Enviar solo la fecha como string "2024-01-15"
+    descripcion: descripcion,
+    valor: valor,
+    productosInventario: productosDelGasto
+});
     }
 
     if (!valido) return;
