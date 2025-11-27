@@ -513,11 +513,29 @@ router.post('/procesar', verificarToken, async (req, res) => {
 });
 
 // 🔥 OBTENER HISTORIAL DE LIQUIDACIONES
+// 🔥 OBTENER HISTORIAL DE LIQUIDACIONES - FILTRADO POR FINCA
 router.get('/historial', verificarToken, async (req, res) => {
   try {
     const { fechaInicio, fechaFin, limite = 50 } = req.query;
     
-    let filtros = { usuario: req.usuario.id };
+    // 🔥 OBTENER LA FINCA ACTIVA DEL USUARIO
+    const usuarioData = await User.findById(req.usuario.id);
+    if (!usuarioData || !usuarioData.fincaActiva) {
+      return res.json({ 
+        success: true, 
+        liquidaciones: [],
+        message: 'No hay finca activa seleccionada'
+      });
+    }
+    
+    const fincaActiva = usuarioData.fincaActiva;
+    console.log('🔍 Cargando historial de finca:', fincaActiva);
+    
+    // 🔥 FILTRAR POR USUARIO Y FINCA ACTIVA
+    let filtros = { 
+      usuario: req.usuario.id,
+      finca: fincaActiva // 🔥 AGREGAR FILTRO POR FINCA
+    };
     
     if (fechaInicio && fechaFin) {
       filtros.fecha = {
@@ -530,9 +548,12 @@ router.get('/historial', verificarToken, async (req, res) => {
       .sort({ fecha: -1 })
       .limit(parseInt(limite));
     
+    console.log(`✅ Se encontraron ${liquidaciones.length} liquidaciones de ${fincaActiva}`);
+    
     res.json({ 
       success: true, 
       liquidaciones,
+      fincaActiva: fincaActiva,
       total: liquidaciones.length 
     });
   } catch (error) {
@@ -572,22 +593,49 @@ router.get('/:id', verificarToken, async (req, res) => {
 });
 
 // 🔥 OBTENER ESTADÍSTICAS DE LIQUIDACIONES
+// 🔥 OBTENER ESTADÍSTICAS DE LIQUIDACIONES - FILTRADO POR FINCA
 router.get('/stats/resumen', verificarToken, async (req, res) => {
   try {
-    const liquidaciones = await Liquidacion.find({ usuario: req.usuario.id });
+    // 🔥 OBTENER LA FINCA ACTIVA DEL USUARIO
+    const usuarioData = await User.findById(req.usuario.id);
+    if (!usuarioData || !usuarioData.fincaActiva) {
+      return res.json({ 
+        success: true, 
+        stats: {
+          totalLiquidaciones: 0,
+          totalIngresos: 0,
+          totalEgresos: 0,
+          promedioIngreso: 0,
+          promedioEgreso: 0
+        },
+        message: 'No hay finca activa seleccionada'
+      });
+    }
+    
+    const fincaActiva = usuarioData.fincaActiva;
+    console.log('📊 Calculando estadísticas para finca:', fincaActiva);
+    
+    // 🔥 FILTRAR POR USUARIO Y FINCA ACTIVA
+    const liquidaciones = await Liquidacion.find({ 
+      usuario: req.usuario.id,
+      finca: fincaActiva // 🔥 AGREGAR FILTRO POR FINCA
+    });
     
     const stats = {
       totalLiquidaciones: liquidaciones.length,
       totalIngresos: liquidaciones.reduce((sum, l) => sum + l.totalIngresos, 0),
       totalEgresos: liquidaciones.reduce((sum, l) => sum + l.totalEgresos, 0),
       promedioIngreso: 0,
-      promedioEgreso: 0
+      promedioEgreso: 0,
+      fincaActiva: fincaActiva // 🔥 INCLUIR FINCA EN LA RESPUESTA
     };
     
     if (stats.totalLiquidaciones > 0) {
       stats.promedioIngreso = stats.totalIngresos / stats.totalLiquidaciones;
       stats.promedioEgreso = stats.totalEgresos / stats.totalLiquidaciones;
     }
+    
+    console.log(`✅ Estadísticas de ${fincaActiva}:`, stats);
     
     res.json({ success: true, stats });
   } catch (error) {

@@ -403,6 +403,13 @@
         <div class="header">
             <h1>📋 Historial de Liquidaciones</h1>
             <p>Resumen completo de todas tus liquidaciones diarias</p>
+
+            <div style="margin-top: 15px;">
+        <span style="background: rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 14px;">
+            🏡 <span id="fincaActivaBadge">Cargando...</span>
+        </span>
+    </div>
+
         </div>
 
         <!-- Estadísticas Generales -->
@@ -506,58 +513,62 @@
     }
 }
 
-        async function cargarHistorial() {
-            const loading = document.getElementById('loading');
-            const container = document.getElementById('liquidacionesContainer');
-            
-            loading.classList.add('active');
+async function cargarHistorial() {
+    const loading = document.getElementById('loading');
+    const container = document.getElementById('liquidacionesContainer');
+    
+    loading.classList.add('active');
 
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/liquidacion/historial`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    throw new Error(data.message || 'Error al cargar historial');
-                }
-
-                liquidaciones = data.liquidaciones || [];
-
-                if (liquidaciones.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">📭</div>
-                            <p class="empty-text">No hay liquidaciones registradas</p>
-                            <button class="btn-ver-detalle" onclick="window.location.href='liquidacion-diaria.html'">
-                                ➕ Crear Primera Liquidación
-                            </button>
-                        </div>
-                    `;
-                    loading.classList.remove('active');
-                    return;
-                }
-
-                mostrarLiquidaciones(liquidaciones);
-
-            } catch (error) {
-                console.error('Error al cargar historial:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <p class="empty-text">Error al cargar historial</p>
-                        <p style="color: var(--danger); margin-top: 10px;">${error.message}</p>
-                    </div>
-                `;
-            } finally {
-                loading.classList.remove('active');
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/liquidacion/historial`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Error al cargar historial');
         }
 
+        // 🔥 ACTUALIZAR BADGE CON FINCA ACTIVA
+        if (data.fincaActiva) {
+            document.getElementById('fincaActivaBadge').textContent = data.fincaActiva;
+        }
+
+        liquidaciones = data.liquidaciones || [];
+
+        if (liquidaciones.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🔭</div>
+                    <p class="empty-text">No hay liquidaciones registradas para ${data.fincaActiva || 'esta finca'}</p>
+                    <button class="btn-ver-detalle" onclick="window.location.href='liquidacion-diaria.html'">
+                        ➕ Crear Primera Liquidación
+                    </button>
+                </div>
+            `;
+            loading.classList.remove('active');
+            return;
+        }
+
+        mostrarLiquidaciones(liquidaciones);
+
+    } catch (error) {
+        console.error('Error al cargar historial:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">❌</div>
+                <p class="empty-text">Error al cargar historial</p>
+                <p style="color: var(--danger); margin-top: 10px;">${error.message}</p>
+            </div>
+        `;
+    } finally {
+        loading.classList.remove('active');
+    }
+}
         function mostrarLiquidaciones(lista) {
             const container = document.getElementById('liquidacionesContainer');
             
