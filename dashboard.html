@@ -1676,8 +1676,9 @@ async function generarFormularios() {
                 <div class="form-group">
                     <label for="fecha${i}">📅 Fecha del Gasto *</label>
                     <input type="date" id="fecha${i}" required 
-                           max="${new Date().toISOString().split('T')[0]}"
-                           value="${new Date().toISOString().split('T')[0]}">
+                           max="" 
+                           value=""
+                           style="transition: all 0.3s ease;">
                 </div>
                 
                 <div class="form-group">
@@ -1711,11 +1712,33 @@ async function generarFormularios() {
                     <input type="hidden" id="inventarioIds${i}" value="">
                 </div>
             `;
-            fragment.appendChild(div);
+          
+          
+            // Configurar fecha máxima como hoy en hora local
+const hoy = new Date();
+const year = hoy.getFullYear();
+const month = String(hoy.getMonth() + 1).padStart(2, '0');
+const day = String(hoy.getDate()).padStart(2, '0');
+const fechaHoy = `${year}-${month}-${day}`;
+
+
+fragment.appendChild(div);
             productosInventario[i] = productos;
         }
         
         container.appendChild(fragment);
+        
+        // ⭐ CONFIGURAR FECHAS DESPUÉS DE AGREGAR AL DOM
+        const hoy = new Date();
+        const year = hoy.getFullYear();
+        const month = String(hoy.getMonth() + 1).padStart(2, '0');
+        const day = String(hoy.getDate()).padStart(2, '0');
+        const fechaHoy = `${year}-${month}-${day}`;
+        
+        for (let i = 1; i <= num; i++) {
+            document.getElementById(`fecha${i}`).max = fechaHoy;
+            document.getElementById(`fecha${i}`).value = fechaHoy;
+        }
         saveBtn.style.display = 'block';
         saveBtn.textContent = '💾 Guardar Gastos';
     } else {

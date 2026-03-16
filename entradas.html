@@ -811,9 +811,14 @@ input:focus, select:focus {
 
     function inicializarPagina() {
         // Configurar fecha máxima y valor por defecto
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('fechaEntrada').max = hoy;
-        document.getElementById('fechaEntrada').value = hoy;
+const hoy = new Date();
+const year = hoy.getFullYear();
+const month = String(hoy.getMonth() + 1).padStart(2, '0');
+const day = String(hoy.getDate()).padStart(2, '0');
+const fechaHoy = `${year}-${month}-${day}`;
+
+document.getElementById('fechaEntrada').max = fechaHoy;
+document.getElementById('fechaEntrada').value = fechaHoy;
 
         actualizarSaludo();
         cargarFincaActual();
