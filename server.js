@@ -387,3 +387,57 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 module.exports = app;
+
+// ============================================
+// 🔥 CRON JOBS - Verificación de suscripciones
+// ============================================
+const User = require('./models/User');
+
+function startCronJobs() {
+    console.log('⏰ Servicio de Cron Jobs iniciado.');
+    
+    // Ejecutar verificación cada hora (3600000 ms)
+    setInterval(checkExpiredSubscriptions, 3600000);
+    
+    // Ejecutar una vez al inicio para asegurar estado consistente
+    checkExpiredSubscriptions();
+}
+
+async function checkExpiredSubscriptions() {
+    try {
+        console.log('🔍 Verificando suscripciones vencidas...');
+        const now = new Date();
+        
+        // Buscar usuarios que cumplieron un mes y no están pagados
+        const usersToCheck = await User.find({
+            bloqueado: { $ne: true },
+            pagado: { $ne: true }
+        });
+        
+        let count = 0;
+        for (const user of usersToCheck) {
+            const fechaCreacion = new Date(user.createdAt);
+            const fechaComparar = new Date(fechaCreacion);
+            fechaComparar.setMonth(fechaComparar.getMonth() + 1);
+            
+            if (now >= fechaComparar) {
+                user.bloqueado = true;
+                user.motivoBloqueo = 'Su período de prueba ha vencido. Por favor contacte al administrador para continuar.';
+                user.fechaBloqueo = now;
+                await user.save();
+                count++;
+            }
+        }
+        
+        if (count > 0) {
+            console.log(`⚠️ ${count} usuarios bloqueados por vencimiento de suscripción.`);
+        } else {
+            console.log('✅ No hay suscripciones por vencer.');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en cron job de suscripciones:', error);
+    }
+}
+
+startCronJobs();

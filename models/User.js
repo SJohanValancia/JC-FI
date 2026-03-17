@@ -33,6 +33,22 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  bloqueado: {
+    type: Boolean,
+    default: false
+  },
+  motivoBloqueo: {
+    type: String,
+    default: ''
+  },
+  fechaBloqueo: {
+    type: Date,
+    default: null
+  },
+  pagado: {
+    type: Boolean,
+    default: false
+  },
   fechaCreacion: {
     type: Date,
     default: Date.now

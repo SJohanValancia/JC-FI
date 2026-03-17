@@ -393,4 +393,136 @@ router.get('/mis-fincas', verificarToken, async (req, res) => {
   }
 });
 
+// Marcar usuario como pagado (solo admins pueden hacerlo)
+router.post('/marcar-pagado', verificarToken, async (req, res) => {
+  try {
+    // Verificar que sea admin
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
+      });
+    }
+
+    const { usuarioId, pagado } = req.body;
+
+    const usuario = await User.findById(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    usuario.pagado = pagado;
+    
+    // Si se marca como pagado y estaba bloqueado, desbloquearlo
+    if (pagado && usuario.bloqueado) {
+      usuario.bloqueado = false;
+      usuario.motivoBloqueo = '';
+      usuario.fechaBloqueo = null;
+    }
+
+    await usuario.save();
+
+    res.json({
+      success: true,
+      message: pagado ? 'Usuario marcado como pagado' : 'Usuario marcado como no pagado',
+      usuario: {
+        id: usuario._id,
+        nombre: usuario.nombre,
+        usuario: usuario.usuario,
+        pagado: usuario.pagado,
+        bloqueado: usuario.bloqueado
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al marcar pagado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar estado de pago'
+    });
+  }
+});
+
+// Obtener todos los usuarios (solo admins)
+router.get('/usuarios', verificarToken, async (req, res) => {
+  try {
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
+      });
+    }
+
+    const usuarios = await User.find().select('-password').sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      usuarios
+    });
+
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener usuarios'
+    });
+  }
+});
+
+// Desbloquear usuario manualmente (solo admins)
+router.post('/desbloquear', verificarToken, async (req, res) => {
+  try {
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
+      });
+    }
+
+    const { usuarioId } = req.body;
+
+    const usuario = await User.findById(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Solo desbloquear si está marcado como pagado
+    if (!usuario.pagado) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede desbloquear. El usuario debe estar marcado como pagado primero.'
+      });
+    }
+
+    usuario.bloqueado = false;
+    usuario.motivoBloqueo = '';
+    usuario.fechaBloqueo = null;
+    await usuario.save();
+
+    res.json({
+      success: true,
+      message: 'Usuario desbloqueado exitosamente',
+      usuario: {
+        id: usuario._id,
+        nombre: usuario.nombre,
+        usuario: usuario.usuario,
+        bloqueado: usuario.bloqueado
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al desbloquear:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al desbloquear usuario'
+    });
+  }
+});
+
 module.exports = router;
